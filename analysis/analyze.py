@@ -25,6 +25,7 @@ What it does (matches the pre-registered plan in the design deck):
 """
 import argparse
 import os
+import re
 import sys
 
 import numpy as np
@@ -67,11 +68,17 @@ def manipulation_checks(d):
     return p
 
 
+# Whole words only, so "human", "manage" or "humanity" are NOT flagged.
+# Word stems (confiden-, hedg-, gender-) also match their longer forms.
+GUESS_PATTERN = re.compile(
+    r"\b(gender\w*|female|male|woman|women|man|men|sex|confiden\w*|hedg\w*|certain\w*|names?)\b")
+
+
 def guessed_hypothesis(text):
     """Flags guesses that mention the manipulated factors. Read them by hand too."""
-    t = str(text).lower()
-    keys = ["gender", "female", "male", "woman", "man ", "sex", "confiden", "hedg", "certain", "name"]
-    return any(k in t for k in keys)
+    if pd.isna(text):
+        return False
+    return bool(GUESS_PATTERN.search(str(text).lower()))
 
 
 # ----------------------------------------------------------------- ART ANOVA

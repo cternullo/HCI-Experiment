@@ -81,7 +81,7 @@ code,.mono{font-family:var(--mono)}
    CONFIG — everything the group may want to change lives here.
    ================================================================= */
 const CONFIG = {
-  STUDY_VERSION: "v1.2-names-only",   // saved with every session; v1.2 = slides v3 minus avatars (gender cued by name only)
+  STUDY_VERSION: "v1.3",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup
   /* Hypotheses (slides v3) and the CSV columns that test them:
        H1a / H2a / H3a  -> Weight of Advice, from initial, advice, final (computed as woa)
        H1b / H2b / H3b  -> trust (1–7 rating after every trial)
@@ -104,7 +104,7 @@ const CONFIG = {
 
   // Matched at 11 words each. {n} is replaced by the advised number.
   PHRASES: {
-    confident: "I’m certain the answer is {n}. This is my most accurate estimate.",
+    confident: "I’m certain the answer is {n}. This is my best estimate.",
     hedged:    "I think it’s probably around {n}, but I’m not completely sure."
   },
   CHECK_NUMBER: 450,   // number used in the end-of-study confidence manipulation check
@@ -249,6 +249,7 @@ function screenHome(){
         <button class="secondary" id="reveal">Show condition</button>
       </div>
       <p class="muted small hidden" id="cond" style="margin-top:12px"></p>
+      <p class="small" id="sheetstatus" style="margin:12px 0 0">${sheetStatusText()}</p>
     </div>
     <div class="row">
       <button id="go">Hand over to participant →</button>
@@ -564,13 +565,62 @@ function saveProgress(){
   if (i >= 0) all[i] = copy; else all.push(copy);
   storageOK = store.set(K.data, all) && storageOK;
 }
+/* ---------- Google Sheet backup ----------
+   Every finished session (and every withdrawal) goes into an "outbox" saved in
+   this browser. The outbox is sent to the Google Sheet straight away, and again
+   every 30 s, whenever the laptop comes back online, and when the page is opened.
+   An item only leaves the outbox once the upload has gone through, so a dropped
+   Wi-Fi connection never loses data. The Sheet ignores a session it already has,
+   so sending one twice is harmless. */
+const OUTBOX = "wyth_outbox_v1";
+let flushing = false;
 function submitRemote(payload){
   if (!CONFIG.SUBMIT_URL) return;
-  try {
-    fetch(CONFIG.SUBMIT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload) }).catch(() => {});
-  } catch(e){}
+  const box = store.get(OUTBOX, []);
+  box.push(JSON.parse(JSON.stringify(payload)));
+  store.set(OUTBOX, box);
+  flushOutbox();
 }
+async function flushOutbox(){
+  if (!CONFIG.SUBMIT_URL || flushing) return;
+  flushing = true;
+  try {
+    let box = store.get(OUTBOX, []);
+    while (box.length){
+      const item = box[0];
+      try {
+        // no-cors: the reply can't be read, but the request only resolves once it has reached Google.
+        await fetch(CONFIG.SUBMIT_URL, { method: "POST", mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(item) });
+      } catch(e){ break; }   // offline: keep it, try again later
+      box = store.get(OUTBOX, []).filter(x => !(x.pid === item.pid && !!x.withdrawn === !!item.withdrawn));
+      store.set(OUTBOX, box);
+      store.set("wyth_last_upload", new Date().toISOString());
+    }
+  } finally {
+    flushing = false;
+    if (typeof refreshSheetStatus === "function") refreshSheetStatus();
+  }
+}
+function resendAllToSheet(){
+  if (!CONFIG.SUBMIT_URL) return 0;
+  const done = store.get(K.data, []).filter(s => s.completed_at && !s.withdrawn);
+  const box = store.get(OUTBOX, []);
+  done.forEach(s => { if (!box.some(x => x.pid === s.pid && !x.withdrawn)) box.push(s); });
+  store.set(OUTBOX, box);
+  flushOutbox();
+  return done.length;
+}
+function sheetStatusText(){
+  if (!CONFIG.SUBMIT_URL) return "Google Sheet backup: <b>off</b> (no SUBMIT_URL set). Data is only on this laptop.";
+  const waiting = store.get(OUTBOX, []).length, last = store.get("wyth_last_upload", null);
+  return `Google Sheet backup: <b>on</b> · waiting to upload: <span class="pill">${waiting}</span>` +
+    (last ? ` · last upload ${esc(last.replace("T", " ").slice(0, 16))}` : " · nothing uploaded yet") +
+    (waiting ? ` <span class="muted">(will retry automatically)</span>` : "");
+}
+function refreshSheetStatus(){ const el = document.getElementById("sheetstatus"); if (el) el.innerHTML = sheetStatusText(); }
+setInterval(flushOutbox, 30000);
+window.addEventListener("online", flushOutbox);
 
 /* Abandon current session (Ctrl+Shift+X): delete partial data, keep slot. */
 document.addEventListener("keydown", e => {
@@ -634,6 +684,13 @@ function screenAdmin(){
       <p class="muted small" style="margin-top:12px">Back up after every session block. Data lives in this browser only (unless a Google Sheet URL is set in CONFIG). Clearing browser data deletes it.</p>
     </div>
     <div class="card">
+      <h2>Google Sheet backup</h2>
+      <p class="small" id="sheetstatus">${sheetStatusText()}</p>
+      ${CONFIG.SUBMIT_URL ? `<div class="row"><button class="secondary" id="resend">Resend all sessions to the Sheet</button><button class="secondary" id="retry">Retry uploads now</button></div>
+      <p class="muted small" style="margin-top:10px">Resending is safe: the Sheet skips any session it already has. Use it once after setting up the Sheet, or if you're unsure everything arrived.</p><p class="small" id="resendmsg"></p>`
+      : `<p class="muted small">To turn it on, follow the steps at the top of <span class="mono">google-sheets/collector.gs</span> and paste the web-app URL into <span class="mono">SUBMIT_URL</span> in this file.</p>`}
+    </div>
+    <div class="card">
       <h2>Balance</h2>
       <table><tr><th></th><th>Item set 1</th><th>Item set 2</th></tr>
         <tr><td>Eve</td><td>${cells.Eve1}</td><td>${cells.Eve2}</td></tr>
@@ -695,6 +752,8 @@ function screenAdmin(){
   $("#pilotE").onclick = () => pilot("Eve");
   $("#pilotA").onclick = () => pilot("Adam");
   $("#clrb").onclick = () => { if ($("#clr").value === "DELETE"){ store.set(K.data, []); screenAdmin(); } };
+  $("#resend") && ($("#resend").onclick = () => { const n = resendAllToSheet(); $("#resendmsg").textContent = `Queued ${n} completed session(s) for upload.`; refreshSheetStatus(); });
+  $("#retry") && ($("#retry").onclick = () => flushOutbox());
   $("#back").onclick = screenHome;
 }
 
@@ -707,6 +766,7 @@ const _setStore = store.set;
 store.set = function(k, v){ if (S && S._pilot && String(k).startsWith("wyth_nextslot_")) return true; return _setStore.call(store, k, v); };
 
 screenHome();
+flushOutbox();   // send anything left over from last time
 </script>
 </body>
 </html>
