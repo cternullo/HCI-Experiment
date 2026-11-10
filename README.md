@@ -15,7 +15,7 @@ This is a Wizard-of-Oz experiment. Participants make 4 estimates, see a pre-scri
 | H2 Gender | H2a | H2b |
 | H3 Interaction | H3a | H3b |
 
-The analysis is a 2×2 mixed ANOVA on each DV, with α = .025 (Bonferroni correction for 2 DVs). If the data is skewed, an aligned rank transform (ART) ANOVA is used instead. If the interaction is significant, confident vs hedged is followed up separately for Eve and for Adam. The full design is in [`docs/design/`](docs/design/).
+The analysis is a 2×2 mixed design on each DV, with α = .025 (Bonferroni correction for 2 DVs). The deciding test is fixed in advance: an aligned rank transform (ART) ANOVA for Weight of Advice (capping it at 0–1 makes it skewed) and an ordinary mixed ANOVA for trust. The other test is always reported as a robustness check. If the interaction is significant, confident vs hedged is followed up separately for Eve and for Adam. The full design is in [`docs/design/`](docs/design/).
 
 ## Repo layout
 

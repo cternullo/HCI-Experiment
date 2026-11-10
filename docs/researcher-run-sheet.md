@@ -24,7 +24,7 @@ Each laptop needs about 10 minutes of setup. Do this the day before, not with a 
 
 Each participant takes about 5 minutes. You only touch the laptop at the start and the end.
 
-1. **Check the home screen.** It shows the station, the next slot number and how many have been completed. Never press **Show condition** while a participant can see the screen.
+1. **Check the home screen.** It shows the station, the next slot number and how many have been completed. The condition is not shown here. If you need it, it is under **Data & settings → Next participant's condition**; only open that when no participant can see the screen.
 2. **Greet them and use the cover story.** Say: *"Thanks for helping. We're testing an AI assistant that helps people make quick estimates. It takes about five minutes, and everything you need is on screen. Here's a sheet with the steps."*
 3. **Press "Hand over to participant →"**, then give them the laptop and the participant sheet.
 4. **Consent.** They read the information and tick the box. If they press **I do not want to take part**, nothing is saved. Thank them and press **Researcher: return**.
@@ -58,7 +58,7 @@ Rule of thumb: never re-run the same person, and never edit their data. Abandon 
 | Home screen says "waiting to upload" and the number keeps growing | The laptop can't reach Google (no Wi-Fi). Carry on: the data is safe on the laptop and uploads by itself once it's back online. Export the CSV at the end of the block as usual. |
 | Storage warning on the home screen | Data isn't being saved. Close the browser and open `experiment.html` directly by double-clicking it. |
 | A participant already knows what the study is about | Run them as normal and note it in the log. Their hypothesis-guess answer will usually flag it. |
-| You accidentally pressed **Show condition** in front of them | Carry on, but note it in the log so the group can decide whether to exclude them. |
+| A participant saw the condition (e.g. in **Data & settings**) | Carry on, but note it in the log so the group can decide whether to exclude them. |
 
 ### Session log
 

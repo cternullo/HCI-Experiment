@@ -31,7 +31,7 @@ p{margin:0 0 14px}
 button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:12px 22px;cursor:pointer;background:var(--accent);color:#1c1f26}
 button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 button.danger{background:var(--bad);color:#1c1f26}
-button:disabled{opacity:.35;cursor:not-allowed}
+button:disabled,button.secondary:disabled,button.danger:disabled{background:var(--panel2);color:var(--muted);border:1px dashed var(--line);cursor:not-allowed}
 input[type=number],input[type=text],textarea,select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%}
 input[type=number]{font-family:var(--mono);font-size:22px;max-width:220px}
 input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
@@ -245,10 +245,7 @@ function screenHome(){
     <div class="card">
       <div class="row">
         <div>Station <span class="pill">${esc(station())}</span> · next slot <span class="pill">#${slot}</span> · completed here <span class="pill">${done}</span></div>
-        <div class="spacer"></div>
-        <button class="secondary" id="reveal">Show condition</button>
       </div>
-      <p class="muted small hidden" id="cond" style="margin-top:12px"></p>
       <p class="small" id="sheetstatus" style="margin:12px 0 0">${sheetStatusText()}</p>
     </div>
     <div class="row">
@@ -258,10 +255,6 @@ function screenHome(){
     </div>
     <p class="muted small" style="margin-top:24px">Tip: if a participant has to stop part-way, press <span class="mono">Ctrl + Shift + X</span> to abandon the session. Abandoned or withdrawn sessions do not use up a slot, so balance is kept.</p>
   `);
-  $("#reveal").onclick = () => {
-    const c = assignmentList(station())[(slot - 1) % CONFIG.SLOTS_TO_GENERATE];
-    const el = $("#cond"); el.textContent = `Slot #${slot}: ${c.assistant}, item set ${c.itemSet}`; el.classList.toggle("hidden");
-  };
   $("#go").onclick = () => { newSession(); screenConsent(); };
   $("#admin").onclick = screenAdmin;
 }
@@ -698,6 +691,12 @@ function screenAdmin(){
       <p class="muted small" style="margin-top:10px">Next 16 slots for station ${esc(station())}: ${list.map((c, i) => `<span class="mono">#${i + 1}&nbsp;${c.assistant[0]}${c.itemSet}</span>`).join(" ")}</p>
     </div>
     <div class="card">
+      <h2>Next participant's condition</h2>
+      <p class="muted small">Only check this when no participant can see the screen.</p>
+      <div class="row"><button class="secondary" id="reveal">Show condition</button></div>
+      <p class="small hidden" id="cond" style="margin-top:12px"></p>
+    </div>
+    <div class="card">
       <h2>Station &amp; slot</h2>
       <p class="muted small">If more than one laptop is used, give each a different station letter (A, B, C…). Each station has its own balanced list, and participant IDs start with the letter.</p>
       <div class="row">
@@ -752,6 +751,13 @@ function screenAdmin(){
   $("#pilotE").onclick = () => pilot("Eve");
   $("#pilotA").onclick = () => pilot("Adam");
   $("#clrb").onclick = () => { if ($("#clr").value === "DELETE"){ store.set(K.data, []); screenAdmin(); } };
+  $("#reveal").onclick = () => {
+    const slot = nextSlot(), c = assignmentList(station())[(slot - 1) % CONFIG.SLOTS_TO_GENERATE];
+    const el = $("#cond"), btn = $("#reveal");
+    el.textContent = `Slot #${slot}: ${c.assistant}, item set ${c.itemSet}`;
+    el.classList.toggle("hidden");
+    btn.textContent = el.classList.contains("hidden") ? "Show condition" : "Hide condition";
+  };
   $("#resend") && ($("#resend").onclick = () => { const n = resendAllToSheet(); $("#resendmsg").textContent = `Queued ${n} completed session(s) for upload.`; refreshSheetStatus(); });
   $("#retry") && ($("#retry").onclick = () => flushOutbox());
   $("#back").onclick = screenHome;
