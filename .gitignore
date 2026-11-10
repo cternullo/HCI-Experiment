@@ -1,0 +1,17 @@
+# Participant data — keep it on the group's shared drive, never in git
+data/*
+!data/README.md
+*.csv
+*.json
+results/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

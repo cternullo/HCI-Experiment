@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Estimation Assistant Study</title>
+<style>
+/* ---------------------------------------------------------------
+   Would You Trust Her? — Group 9, Human Centred AI
+   Wizard-of-Oz experiment app. Runs fully offline in one file.
+   --------------------------------------------------------------- */
+:root{
+  --bg:#1c1f26; --panel:#252932; --panel2:#2d323d; --line:#3a404c;
+  --text:#eee9df; --muted:#9aa0ab; --accent:#f07c45; --good:#7fcf9a; --bad:#e86a6a;
+  --radius:14px;
+  --font: "Space Grotesk", "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:17px;line-height:1.5}
+#app{max-width:860px;margin:0 auto;padding:40px 24px 80px;min-height:100%}
+h1{font-size:30px;line-height:1.2;margin:0 0 12px}
+h2{font-size:22px;margin:0 0 12px}
+p{margin:0 0 14px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.kicker{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:28px;margin-bottom:20px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:12px 22px;cursor:pointer;background:var(--accent);color:#1c1f26}
+button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+button.danger{background:var(--bad);color:#1c1f26}
+button:disabled{opacity:.35;cursor:not-allowed}
+input[type=number],input[type=text],textarea,select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;width:100%}
+input[type=number]{font-family:var(--mono);font-size:22px;max-width:220px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+textarea{min-height:110px;resize:vertical}
+label.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+label.check input{margin-top:5px;width:18px;height:18px;accent-color:var(--accent)}
+.field{margin:18px 0}
+.field > .lbl{display:block;font-weight:600;margin-bottom:8px}
+/* Likert */
+.likert{display:flex;gap:8px;margin:10px 0 4px}
+.likert button{flex:1;background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:14px 0;font-family:var(--mono);font-size:18px}
+.likert button.sel{background:var(--accent);color:#1c1f26;border-color:var(--accent)}
+.likert-ends{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.opts{display:grid;gap:8px}
+.opts button{background:var(--panel2);color:var(--text);border:1px solid var(--line);text-align:left;font-weight:500}
+.opts button.sel{border-color:var(--accent);outline:2px solid var(--accent)}
+/* Assistant */
+.agent-head{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.agent-head svg{width:64px;height:64px;flex:none}
+.agent-name{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.agent-name::before{content:"● ";}
+.bubble{background:var(--panel2);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:16px 18px;font-size:19px;max-width:560px}
+.typing span{display:inline-block;width:8px;height:8px;margin:0 3px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.intro-avatar svg{width:150px;height:150px}
+.stimulus{display:flex;justify-content:center;background:#f4efe6;border-radius:var(--radius);padding:10px}
+.stimulus svg,.stimulus img{max-width:100%;height:auto;display:block}
+.bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:12px}
+.bar > div{height:100%;background:var(--accent);width:100%;transition-property:width;transition-timing-function:linear}
+.mine{font-family:var(--mono);color:var(--muted);margin:6px 0 16px}
+.progress{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:700px){.pair{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+code,.mono{font-family:var(--mono)}
+.pill{display:inline-block;font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
+.notice{border-left:3px solid var(--accent);padding:10px 14px;background:var(--panel2);border-radius:6px;margin:12px 0}
+.hidden{display:none!important}
+.err{color:var(--bad);font-size:14px;min-height:20px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =================================================================
+   CONFIG — everything the group may want to change lives here.
+   ================================================================= */
+const CONFIG = {
+  STUDY_VERSION: "v1.1-design3",   // saved with every session; matches Experimental Design slides v3
+  /* Hypotheses (slides v3) and the CSV columns that test them:
+       H1a / H2a / H3a  -> Weight of Advice, from initial, advice, final (computed as woa)
+       H1b / H2b / H3b  -> trust (1–7 rating after every trial)
+       H1 = confidence (within), H2 = assistant Eve/Adam (between), H3 = their interaction.
+     Participants never see these: the hypothesis guess is asked before any check that hints at them. */
+  ADVICE_DELAY_MS: 2000,        // "2 s wait" before advice appears (same in all conditions)
+  EXPOSURE_MS: 6000,            // how long each image is shown before it disappears
+  ADVICE_OFFSET: 0.10,          // advice is a fixed 10% from the truth
+  SLOTS_TO_GENERATE: 200,       // length of the pre-shuffled assignment list per station
+  CONTACT: "a member of Group 9 (Human Centred AI)",   // shown on consent/debrief for withdrawal
+
+  // Optional: Google Apps Script web-app URL to send each finished session to a Google Sheet.
+  // Leave "" to store only on this computer (export CSV from the experimenter panel).
+  SUBMIT_URL: "",
+
+  ASSISTANTS: {
+    Eve:  { name: "Eve",  gender: "female" },
+    Adam: { name: "Adam", gender: "male" }
+  },
+
+  // Matched at 11 words each. {n} is replaced by the advised number.
+  PHRASES: {
+    confident: "I’m certain the answer is {n}. This is my most accurate estimate.",
+    hedged:    "I think it’s probably around {n}, but I’m not completely sure."
+  },
+  CHECK_NUMBER: 450,   // number used in the end-of-study confidence manipulation check
+
+  /* Items. With 4 items, item set 1 makes items 1–2 confident and 3–4 hedged; set 2 swaps.
+     adviceDir: +1 = advice 10% above truth, -1 = 10% below. Arranged so each confidence
+     level gets one "above" and one "below" item in BOTH item sets.
+     type "dots": generated image (identical for every participant via the seed).
+     type "image": set src to a file next to this HTML, e.g. "images/meal1.jpg" (local file use only).
+     Keep an even number of items. */
+  ITEMS: [
+    { id: "I1", type: "dots", truth: 147, seed: 101, color: "#2f6db5", adviceDir: +1,
+      question: "How many dots were in the image?" },
+    { id: "I2", type: "dots", truth: 212, seed: 202, color: "#c0492b", adviceDir: -1,
+      question: "How many dots were in the image?" },
+    { id: "I3", type: "dots", truth: 96,  seed: 303, color: "#2e8a57", adviceDir: +1,
+      question: "How many dots were in the image?" },
+    { id: "I4", type: "dots", truth: 263, seed: 404, color: "#7a4bb0", adviceDir: -1,
+      question: "How many dots were in the image?" }
+  ]
+};
+
+/* =================================================================
+   Utilities
+   ================================================================= */
+const $ = (sel, el = document) => el.querySelector(sel);
+const app = document.getElementById("app");
+const now = () => Date.now();
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hashStr(s){ let h = 2166136261; for (const c of s){ h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function shuffle(arr, rnd){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+};
+const K = { data: "wyth_sessions_v1", station: "wyth_station", slot: s => "wyth_nextslot_" + s };
+let storageOK = (() => { try { localStorage.setItem("_t","1"); localStorage.removeItem("_t"); return true; } catch(e){ return false; } })();
+
+/* =================================================================
+   Balanced, pre-shuffled assignment list
+   Conditions are shuffled within blocks of 4, so after every 4
+   completed participants each Eve/Adam x set 1/2 cell has one person.
+   ================================================================= */
+const CONDITIONS = [
+  { assistant: "Eve",  itemSet: 1 }, { assistant: "Eve",  itemSet: 2 },
+  { assistant: "Adam", itemSet: 1 }, { assistant: "Adam", itemSet: 2 }
+];
+function assignmentList(station){
+  const rnd = mulberry32(hashStr("group9-" + station));
+  const out = [];
+  while (out.length < CONFIG.SLOTS_TO_GENERATE) out.push(...shuffle(CONDITIONS, rnd));
+  return out;
+}
+const station = () => store.get(K.station, "A");
+const nextSlot = () => store.get(K.slot(station()), 1);
+
+/* =================================================================
+   Stimuli: deterministic dot images
+   ================================================================= */
+function dotsSVG(item){
+  const W = 620, H = 400, r = 6, minD = 15, pad = 14;
+  const rnd = mulberry32(item.seed);
+  const pts = [];
+  let guard = 0;
+  while (pts.length < item.truth && guard < 200000){
+    guard++;
+    const x = pad + rnd() * (W - 2 * pad), y = pad + rnd() * (H - 2 * pad);
+    if (pts.every(p => (p[0] - x) ** 2 + (p[1] - y) ** 2 >= minD * minD)) pts.push([x, y]);
+  }
+  if (pts.length !== item.truth) console.error("Could not place all dots for", item.id);
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Image with dots">
+    <rect width="${W}" height="${H}" fill="#f4efe6"/>
+    ${pts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r}" fill="${item.color}"/>`).join("")}
+  </svg>`;
+}
+function stimulusHTML(item){
+  if (item.type === "image") return `<img src="${esc(item.src)}" alt="">`;
+  return dotsSVG(item);
+}
+const adviceFor = item => Math.round(item.truth * (1 + CONFIG.ADVICE_OFFSET * item.adviceDir));
+
+/* =================================================================
+   Avatars — identical face, colours and framing; only hair differs.
+   ================================================================= */
+function avatarSVG(gender){
+  const hairBack = gender === "female"
+    ? `<path d="M30 58 C28 30 44 20 60 20 C76 20 92 30 90 58 L94 96 C86 100 78 98 74 92 L46 92 C42 98 34 100 26 96 Z" fill="#5a3b2a"/>`
+    : ``;
+  const hairTop = gender === "female"
+    ? `<path d="M38 52 C38 34 48 27 60 27 C72 27 82 34 82 52 C76 42 66 38 58 39 C50 40 42 45 38 52 Z" fill="#5a3b2a"/>`
+    : `<path d="M39 50 C37 36 44 27 56 25 C64 23 74 25 79 31 C83 36 82 44 81 50 L79 50 C78 44 76 40 72 38 C66 40 58 40 50 37 C46 39 42 43 41 50 Z" fill="#5a3b2a"/>`;
+  const ears = gender === "male"
+    ? `<ellipse cx="39" cy="58" rx="4" ry="6" fill="#e9b996"/><ellipse cx="81" cy="58" rx="4" ry="6" fill="#e9b996"/>` : ``;
+  return `<svg viewBox="0 0 120 120" aria-hidden="true">
+    <circle cx="60" cy="60" r="58" fill="#f07c45" opacity=".18"/>
+    <circle cx="60" cy="60" r="58" fill="none" stroke="#f07c45" stroke-width="3"/>
+    ${hairBack}
+    <path d="M28 112 C30 92 44 84 60 84 C76 84 90 92 92 112 Z" fill="#3d6f8f"/>
+    <rect x="53" y="70" width="14" height="16" rx="6" fill="#e9b996"/>
+    ${ears}
+    <ellipse cx="60" cy="56" rx="21" ry="24" fill="#f1c6a3"/>
+    ${hairTop}
+    <path d="M47 51 Q52 48.5 56 50.5 M64 50.5 Q68 48.5 73 51" stroke="#5a3b2a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <circle cx="52" cy="58" r="2.6" fill="#2b2b2b"/><circle cx="68" cy="58" r="2.6" fill="#2b2b2b"/>
+    <path d="M52 68 Q60 74 68 68" stroke="#a2574a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* =================================================================
+   Session state
+   ================================================================= */
+let S = null;   // current participant session
+let timers = [];
+function clearTimers(){ timers.forEach(t => clearTimeout(t)); timers = []; }
+
+function newSession(){
+  const st = station(), slot = nextSlot();
+  const cond = assignmentList(st)[(slot - 1) % CONFIG.SLOTS_TO_GENERATE];
+  const n = CONFIG.ITEMS.length, half = n / 2;
+  // Item set 1: first half confident; item set 2: second half confident.
+  const plan = CONFIG.ITEMS.map((it, i) => ({
+    item: it,
+    confidence: (cond.itemSet === 1) === (i < half) ? "confident" : "hedged"
+  }));
+  // Trial order is randomised per participant so confidence is not confounded with position.
+  const order = shuffle(plan, Math.random);
+  const rand = Math.random().toString(36).slice(2, 4).toUpperCase();
+  S = {
+    pid: `${st}${String(slot).padStart(3, "0")}-${rand}`,
+    station: st, slot, assistant: cond.assistant,
+    ai_gender: CONFIG.ASSISTANTS[cond.assistant].gender,
+    item_set: cond.itemSet, version: CONFIG.STUDY_VERSION,
+    started_at: new Date().toISOString(), completed_at: null,
+    consent: false, withdrawn: false,
+    trials: order.map((p, idx) => ({
+      position: idx + 1, item_id: p.item.id, confidence: p.confidence,
+      truth: p.item.truth, advice: adviceFor(p.item),
+      initial: null, final: null, trust: null,
+      rt_initial_ms: null, rt_final_ms: null, rt_trust_ms: null
+    })),
+    checks: {}
+  };
+}
+const A = () => CONFIG.ASSISTANTS[S.assistant];
+
+/* =================================================================
+   Screens
+   ================================================================= */
+function render(html){ clearTimers(); app.innerHTML = html; window.scrollTo(0, 0); }
+
+/* ---------- Experimenter home ---------- */
+function screenHome(){
+  S = null;
+  const sessions = store.get(K.data, []);
+  const done = sessions.filter(s => s.completed_at && !s.withdrawn).length;
+  const slot = nextSlot();
+  render(`
+    <div class="kicker">Experimenter screen · do not show participants</div>
+    <h1>Ready for the next participant</h1>
+    ${storageOK ? "" : `<div class="notice">⚠ This browser is blocking local storage, so data will not be saved. Open this file directly in Chrome/Firefox/Edge (not inside a preview window).</div>`}
+    <div class="card">
+      <div class="row">
+        <div>Station <span class="pill">${esc(station())}</span> · next slot <span class="pill">#${slot}</span> · completed here <span class="pill">${done}</span></div>
+        <div class="spacer"></div>
+        <button class="secondary" id="reveal">Show condition</button>
+      </div>
+      <p class="muted small hidden" id="cond" style="margin-top:12px"></p>
+    </div>
+    <div class="row">
+      <button id="go">Hand over to participant →</button>
+      <div class="spacer"></div>
+      <button class="secondary" id="admin">Data &amp; settings</button>
+    </div>
+    <p class="muted small" style="margin-top:24px">Tip: if a participant has to stop part-way, press <span class="mono">Ctrl + Shift + X</span> to abandon the session. Abandoned or withdrawn sessions do not use up a slot, so balance is kept.</p>
+  `);
+  $("#reveal").onclick = () => {
+    const c = assignmentList(station())[(slot - 1) % CONFIG.SLOTS_TO_GENERATE];
+    const el = $("#cond"); el.textContent = `Slot #${slot}: ${c.assistant}, item set ${c.itemSet}`; el.classList.toggle("hidden");
+  };
+  $("#go").onclick = () => { newSession(); screenConsent(); };
+  $("#admin").onclick = screenAdmin;
+}
+
+/* ---------- Consent (cover story) ---------- */
+function screenConsent(){
+  render(`
+    <div class="kicker">Study information</div>
+    <h1>Testing an AI that helps with estimates</h1>
+    <div class="card">
+      <p>We are a student group in the Human Centred AI module. We are testing an AI assistant that helps people make quick estimates.</p>
+      <p>You will see 4 images for a few seconds each and estimate how many dots each one contains. After each estimate the AI assistant will give its own answer, and you can then give a final answer and rate how much you trust the assistant.</p>
+      <p>It takes about <b>5 minutes</b>. Participation is voluntary. You can stop at any time without giving a reason.</p>
+      <p>We do <b>not</b> record your name, email or any personal details. Your answers are stored under a random ID. You will see this ID at the end, and you can use it to ask ${esc(CONFIG.CONTACT)} to delete your data.</p>
+      <p class="muted small">Some details of the study are explained only at the end, so that they do not affect your answers. You will get a full explanation before you leave.</p>
+      <label class="check" style="margin-top:18px"><input type="checkbox" id="ok"> <span>I have read this information, I am 18 or over, and I agree to take part.</span></label>
+    </div>
+    <div class="row"><button id="next" disabled>Continue</button><div class="spacer"></div><button class="secondary" id="no">I do not want to take part</button></div>
+  `);
+  $("#ok").onchange = e => $("#next").disabled = !e.target.checked;
+  $("#next").onclick = () => { S.consent = true; S.consented_at = new Date().toISOString(); screenIntro(); };
+  $("#no").onclick = () => { S = null; screenThanksNoData(); };
+}
+function screenThanksNoData(){
+  render(`<div class="card"><h2>No problem — thank you.</h2><p>Nothing has been recorded. Please hand the computer back to the researcher.</p></div>
+    <button class="secondary" id="back">Researcher: return</button>`);
+  $("#back").onclick = screenHome;
+}
+
+/* ---------- Assistant introduction ---------- */
+function screenIntro(){
+  const a = A();
+  render(`
+    <div class="card" style="text-align:center">
+      <div class="intro-avatar">${avatarSVG(a.gender)}</div>
+      <div class="agent-name" style="margin:10px 0 14px">${esc(a.name)} · AI assistant</div>
+      <div class="bubble" style="margin:0 auto;text-align:left">Hi, I’m ${esc(a.name)}, your AI assistant. I’ll be helping you with some estimates today.</div>
+    </div>
+    <div class="card">
+      <h2>How it works</h2>
+      <p>1. An image of dots appears for ${CONFIG.EXPOSURE_MS / 1000} seconds. There is not enough time to count them, so just estimate.</p>
+      <p>2. Type your estimate of how many dots there were.</p>
+      <p>3. ${esc(a.name)} will then give an estimate.</p>
+      <p>4. Give your <b>final</b> estimate. You can keep your first answer, change it a little, or change it a lot. Try to be as accurate as you can.</p>
+      <p>5. Rate how much you trust ${esc(a.name)}’s answer.</p>
+    </div>
+    <button id="start">Start</button>
+  `);
+  $("#start").onclick = () => trialReady(0);
+}
+
+/* ---------- Trials ---------- */
+function trialReady(i){
+  const t = S.trials[i];
+  render(`
+    <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
+    <div class="card" style="text-align:center;padding:60px 28px">
+      <h2>Get ready</h2>
+      <p class="muted">The image will appear for ${CONFIG.EXPOSURE_MS / 1000} seconds.</p>
+      <button id="show">Show image</button>
+    </div>`);
+  $("#show").onclick = () => trialExposure(i);
+}
+function trialExposure(i){
+  const t = S.trials[i], item = CONFIG.ITEMS.find(x => x.id === t.item_id);
+  render(`
+    <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
+    <div class="stimulus">${stimulusHTML(item)}</div>
+    <div class="bar"><div id="bar"></div></div>`);
+  const bar = $("#bar");
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    bar.style.transitionDuration = CONFIG.EXPOSURE_MS + "ms"; bar.style.width = "0%";
+  }));
+  t.exposure_started = new Date().toISOString();
+  timers.push(setTimeout(() => trialInitial(i), CONFIG.EXPOSURE_MS));
+}
+function numberField(id, label){
+  return `<div class="field"><label class="lbl" for="${id}">${label}</label>
+    <input type="number" id="${id}" inputmode="numeric" min="0" step="1" autocomplete="off"><div class="err" id="${id}-err"></div></div>`;
+}
+function readInt(id){
+  const v = $("#" + id).value.trim();
+  if (!/^\d+$/.test(v)) return null;
+  const n = parseInt(v, 10);
+  return n >= 0 && n < 100000 ? n : null;
+}
+function bindEnter(inputId, btnId){
+  $("#" + inputId).addEventListener("keydown", e => { if (e.key === "Enter" && !$("#" + btnId).disabled) $("#" + btnId).click(); });
+}
+function trialInitial(i){
+  const t = S.trials[i], item = CONFIG.ITEMS.find(x => x.id === t.item_id);
+  render(`
+    <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
+    <div class="card">
+      <h2>${esc(item.question)}</h2>
+      ${numberField("est", "Your estimate")}
+      <button id="sub" disabled>Submit estimate</button>
+    </div>`);
+  const t0 = now(), inp = $("#est");
+  inp.focus();
+  inp.oninput = () => { $("#sub").disabled = readInt("est") === null; $("#est-err").textContent = ""; };
+  bindEnter("est", "sub");
+  $("#sub").onclick = () => {
+    const v = readInt("est");
+    if (v === null){ $("#est-err").textContent = "Please enter a whole number."; return; }
+    t.initial = v; t.rt_initial_ms = now() - t0;
+    trialAdvice(i);
+  };
+}
+function trialAdvice(i){
+  const t = S.trials[i], item = CONFIG.ITEMS.find(x => x.id === t.item_id), a = A();
+  const msg = CONFIG.PHRASES[t.confidence].replace("{n}", t.advice);
+  render(`
+    <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
+    <div class="card">
+      <h2>${esc(item.question)}</h2>
+      <div class="mine">You → ${t.initial}</div>
+      <div class="agent-head">${avatarSVG(a.gender)}<div class="agent-name">${esc(a.name)} · AI assistant</div></div>
+      <div class="bubble" id="bubble"><span class="typing"><span></span><span></span><span></span></span></div>
+      <div id="after" class="hidden">
+        ${numberField("fin", "Your final estimate")}
+        <button id="sub" disabled>Submit final estimate</button>
+      </div>
+    </div>`);
+  timers.push(setTimeout(() => {
+    $("#bubble").textContent = `“${msg}”`;
+    t.advice_shown_at = new Date().toISOString();
+    $("#after").classList.remove("hidden");
+    const t0 = now(), inp = $("#fin");
+    inp.focus();
+    inp.oninput = () => { $("#sub").disabled = readInt("fin") === null; };
+    bindEnter("fin", "sub");
+    $("#sub").onclick = () => {
+      const v = readInt("fin");
+      if (v === null){ $("#fin-err").textContent = "Please enter a whole number."; return; }
+      t.final = v; t.rt_final_ms = now() - t0;
+      trialTrust(i);
+    };
+  }, CONFIG.ADVICE_DELAY_MS));
+}
+function likert(id, left, right){
+  return `<div class="likert" id="${id}">${[1,2,3,4,5,6,7].map(n => `<button type="button" data-v="${n}">${n}</button>`).join("")}</div>
+    <div class="likert-ends"><span>1 = ${left}</span><span>7 = ${right}</span></div>`;
+}
+function bindLikert(id, onPick){
+  document.querySelectorAll(`#${id} button`).forEach(b => b.onclick = () => {
+    document.querySelectorAll(`#${id} button`).forEach(x => x.classList.remove("sel"));
+    b.classList.add("sel"); onPick(parseInt(b.dataset.v, 10));
+  });
+}
+function trialTrust(i){
+  const t = S.trials[i], a = A();
+  const msg = CONFIG.PHRASES[t.confidence].replace("{n}", t.advice);
+  render(`
+    <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
+    <div class="card">
+      <div class="mine">You → ${t.initial} &nbsp;·&nbsp; ${esc(a.name)}: “${esc(msg)}” &nbsp;·&nbsp; Final → ${t.final}</div>
+      <h2>How much do you trust ${esc(a.name)}’s answer?</h2>
+      ${likert("trust", "not at all", "completely")}
+      <div style="margin-top:22px"><button id="sub" disabled>${i + 1 < S.trials.length ? "Next task" : "Continue"}</button></div>
+    </div>`);
+  const t0 = now(); let val = null;
+  bindLikert("trust", v => { val = v; $("#sub").disabled = false; });
+  $("#sub").onclick = () => {
+    t.trust = val; t.rt_trust_ms = now() - t0;
+    saveProgress();
+    if (i + 1 < S.trials.length) trialReady(i + 1); else checkHypothesis();
+  };
+}
+
+/* ---------- Checks. Order matters: the demand check (hypothesis guess)
+   comes FIRST, before any question that mentions gender or confidence. ---------- */
+function checkHypothesis(){
+  render(`
+    <div class="kicker">A few final questions · 1 of 4</div>
+    <div class="card">
+      <h2>What do you think this study was about?</h2>
+      <p class="muted small">There is no right answer. One or two sentences is fine.</p>
+      <textarea id="h"></textarea>
+      <div style="margin-top:16px"><button id="sub">Next</button></div>
+    </div>`);
+  const t0 = now();
+  $("#sub").onclick = () => { S.checks.hypothesis_guess = $("#h").value.trim(); S.checks.rt_hypothesis_ms = now() - t0; checkName(); };
+}
+function checkName(){
+  render(`
+    <div class="kicker">A few final questions · 2 of 4</div>
+    <div class="card">
+      <h2>What was the AI assistant’s name?</h2>
+      <input type="text" id="nm" autocomplete="off">
+      <div style="margin-top:16px"><button id="sub" disabled>Next</button></div>
+    </div>`);
+  $("#nm").focus();
+  $("#nm").oninput = () => $("#sub").disabled = !$("#nm").value.trim();
+  $("#sub").onclick = () => {
+    const v = $("#nm").value.trim();
+    S.checks.name_recall = v;
+    S.checks.name_correct = v.toLowerCase().replace(/[^a-z]/g, "") === A().name.toLowerCase();
+    checkGender();
+  };
+}
+function checkGender(){
+  const opts = [["female","Female"],["male","Male"],["neither","Neither"],["didnt_think","I didn’t think about it"]];
+  render(`
+    <div class="kicker">A few final questions · 3 of 4</div>
+    <div class="card">
+      <h2>Did you think of the AI assistant as…</h2>
+      <div class="opts" id="g">${opts.map(o => `<button type="button" data-v="${o[0]}">${o[1]}</button>`).join("")}</div>
+      <div style="margin-top:16px"><button id="sub" disabled>Next</button></div>
+    </div>`);
+  let val = null;
+  document.querySelectorAll("#g button").forEach(b => b.onclick = () => {
+    document.querySelectorAll("#g button").forEach(x => x.classList.remove("sel"));
+    b.classList.add("sel"); val = b.dataset.v; $("#sub").disabled = false;
+  });
+  $("#sub").onclick = () => { S.checks.gender_perceived = val; checkConfidence(); };
+}
+function checkConfidence(){
+  const order = Math.random() < 0.5 ? ["confident","hedged"] : ["hedged","confident"];
+  S.checks.conf_check_left = order[0];
+  const box = (k, idx) => `<div class="card" style="margin:0">
+      <div class="bubble" style="font-size:17px">“${esc(CONFIG.PHRASES[k].replace("{n}", CONFIG.CHECK_NUMBER))}”</div>
+      <p style="margin:16px 0 4px"><b>How confident does this response sound?</b></p>
+      ${likert("c" + idx, "not at all", "completely")}</div>`;
+  render(`
+    <div class="kicker">A few final questions · 4 of 4</div>
+    <h2>Here are two ways an AI assistant could word an answer.</h2>
+    <p class="muted">Rate each one.</p>
+    <div class="pair">${box(order[0], 0)}${box(order[1], 1)}</div>
+    <div style="margin-top:20px"><button id="sub" disabled>Finish</button></div>`);
+  const vals = {};
+  const upd = () => $("#sub").disabled = !(vals[0] && vals[1]);
+  bindLikert("c0", v => { vals[0] = v; upd(); });
+  bindLikert("c1", v => { vals[1] = v; upd(); });
+  $("#sub").onclick = () => {
+    S.checks["conf_rating_" + order[0]] = vals[0];
+    S.checks["conf_rating_" + order[1]] = vals[1];
+    S.completed_at = new Date().toISOString();
+    saveProgress(true);
+    submitRemote(S);
+    store.set(K.slot(S.station), S.slot + 1);   // slot is only used up by a completed session
+    screenDebrief();
+  };
+}
+
+/* ---------- Debrief ---------- */
+function screenDebrief(){
+  const a = A();
+  render(`
+    <div class="kicker">Thank you · debrief</div>
+    <h1>What this study was really about</h1>
+    <div class="card">
+      <p>Thank you for taking part. We told you we were testing an AI that helps with estimates. That was not the full story.</p>
+      <p><b>There was no real AI.</b> “${esc(a.name)}” was a pre-scripted interface (a “Wizard of Oz” prototype). Its answers were fixed in advance and were always 10% away from the true number.</p>
+      <p>We are studying whether two small presentation choices change how much people rely on AI advice:</p>
+      <p>• <b>Gender of the assistant.</b> Half of participants meet “Eve” (a female name and avatar) and half meet “Adam” (a male name and avatar). You met ${esc(a.name)}. Everything else is identical.</p>
+      <p>• <b>Confidence of the wording.</b> In some tasks the assistant sounded certain; in others it hedged (“I think it’s probably…”). The number was the same.</p>
+      <p>We look at two things separately, and test each of them for both factors and for how the factors combine:</p>
+      <p>• <b>What you did:</b> how far you moved your final answer towards the assistant’s answer (“weight of advice”).</p>
+      <p>• <b>What you said:</b> your 1–7 trust rating after each task.</p>
+      <p>The goal is not to judge anyone. We want to know whether design choices like these change reliance on <i>identical</i> advice, because real AI products make these choices all the time.</p>
+      <p>We did not tell you this at the start because knowing it could have changed your answers.</p>
+      <div class="notice">Your participant ID is <b class="mono">${esc(S.pid)}</b>. If you want your data deleted later, give this ID to ${esc(CONFIG.CONTACT)}.</div>
+      <p><b>Please do not discuss the study with classmates</b> who might still take part. It would affect their answers.</p>
+    </div>
+    <div class="row">
+      <button id="done">Finish</button>
+      <div class="spacer"></div>
+      <button class="secondary" id="wd">Withdraw my data</button>
+    </div>
+    <div id="wdbox" class="card hidden" style="margin-top:16px">
+      <p>Delete everything you just answered? This cannot be undone.</p>
+      <div class="row"><button class="danger" id="wdyes">Yes, delete my data</button><button class="secondary" id="wdno">Cancel</button></div>
+    </div>`);
+  $("#done").onclick = screenHandBack;
+  $("#wd").onclick = () => $("#wdbox").classList.remove("hidden");
+  $("#wdno").onclick = () => $("#wdbox").classList.add("hidden");
+  $("#wdyes").onclick = () => {
+    const pid = S.pid;
+    store.set(K.data, store.get(K.data, []).filter(s => s.pid !== pid));
+    store.set(K.slot(S.station), S.slot);   // give the slot back so balance is kept
+    submitRemote({ pid, withdrawn: true, withdrawn_at: new Date().toISOString() });
+    render(`<div class="card"><h2>Your data has been deleted.</h2><p>Thank you for your time. Please hand the computer back to the researcher.</p></div>
+      <button class="secondary" id="back">Researcher: return</button>`);
+    $("#back").onclick = screenHome;
+  };
+}
+function screenHandBack(){
+  render(`<div class="card" style="text-align:center;padding:60px 28px"><h1>All done — thank you!</h1><p>Please hand the computer back to the researcher.</p></div>
+    <div style="text-align:center"><button class="secondary" id="back">Researcher: next participant</button></div>`);
+  $("#back").onclick = screenHome;
+}
+
+/* =================================================================
+   Saving
+   ================================================================= */
+function saveProgress(){
+  if (!S) return;
+  const all = store.get(K.data, []);
+  const i = all.findIndex(s => s.pid === S.pid);
+  const copy = JSON.parse(JSON.stringify(S));
+  if (i >= 0) all[i] = copy; else all.push(copy);
+  storageOK = store.set(K.data, all) && storageOK;
+}
+function submitRemote(payload){
+  if (!CONFIG.SUBMIT_URL) return;
+  try {
+    fetch(CONFIG.SUBMIT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload) }).catch(() => {});
+  } catch(e){}
+}
+
+/* Abandon current session (Ctrl+Shift+X): delete partial data, keep slot. */
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.shiftKey && (e.key === "X" || e.key === "x") && S){
+    const pid = S.pid;
+    store.set(K.data, store.get(K.data, []).filter(s => !(s.pid === pid && !s.completed_at)));
+    screenHome();
+  }
+});
+
+/* =================================================================
+   Export
+   ================================================================= */
+const TRIAL_COLS = ["pid","station","slot","assistant","ai_gender","item_set","version","started_at","completed_at",
+  "position","item_id","confidence","truth","advice","initial","final","trust","woa_raw","woa",
+  "rt_initial_ms","rt_final_ms","rt_trust_ms",
+  "hypothesis_guess","name_recall","name_correct","gender_perceived","conf_rating_confident","conf_rating_hedged","conf_check_left"];
+function woa(t){
+  if (t.initial == null || t.final == null || t.initial === t.advice) return [null, null];
+  const raw = (t.final - t.initial) / (t.advice - t.initial);
+  return [raw, Math.min(1, Math.max(0, raw))];
+}
+function toCSV(sessions){
+  const q = v => { if (v === null || v === undefined) return ""; const s = String(v); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const lines = [TRIAL_COLS.join(",")];
+  for (const s of sessions) for (const t of s.trials){
+    const [raw, capped] = woa(t);
+    const row = { ...s, ...s.checks, ...t, woa_raw: raw === null ? null : +raw.toFixed(4), woa: capped === null ? null : +capped.toFixed(4) };
+    lines.push(TRIAL_COLS.map(c => q(row[c])).join(","));
+  }
+  return lines.join("\n");
+}
+function download(name, text, type){
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  } catch(e){}
+}
+
+/* ---------- Experimenter panel ---------- */
+function screenAdmin(){
+  const all = store.get(K.data, []);
+  const complete = all.filter(s => s.completed_at && !s.withdrawn);
+  const cells = {};
+  CONDITIONS.forEach(c => cells[c.assistant + c.itemSet] = 0);
+  complete.forEach(s => cells[s.assistant + s.item_set]++);
+  const list = assignmentList(station()).slice(0, 16);
+  render(`
+    <div class="kicker">Experimenter · data &amp; settings</div>
+    <h1>Data &amp; settings</h1>
+    <div class="card">
+      <h2>Export</h2>
+      <p>${complete.length} completed session(s) on this computer${all.length > complete.length ? `, ${all.length - complete.length} incomplete (excluded from export)` : ""}.</p>
+      <div class="row">
+        <button id="csv" ${complete.length ? "" : "disabled"}>Download CSV</button>
+        <button class="secondary" id="json" ${all.length ? "" : "disabled"}>Download raw JSON (backup)</button>
+        <button class="secondary" id="copy" ${complete.length ? "" : "disabled"}>Show CSV to copy</button>
+      </div>
+      <textarea id="csvtext" class="hidden" style="margin-top:12px;min-height:200px;font-family:var(--mono);font-size:12px" readonly></textarea>
+      <p class="muted small" style="margin-top:12px">Back up after every session block. Data lives in this browser only (unless a Google Sheet URL is set in CONFIG). Clearing browser data deletes it.</p>
+    </div>
+    <div class="card">
+      <h2>Balance</h2>
+      <table><tr><th></th><th>Item set 1</th><th>Item set 2</th></tr>
+        <tr><td>Eve</td><td>${cells.Eve1}</td><td>${cells.Eve2}</td></tr>
+        <tr><td>Adam</td><td>${cells.Adam1}</td><td>${cells.Adam2}</td></tr></table>
+      <p class="muted small" style="margin-top:10px">Next 16 slots for station ${esc(station())}: ${list.map((c, i) => `<span class="mono">#${i + 1}&nbsp;${c.assistant[0]}${c.itemSet}</span>`).join(" ")}</p>
+    </div>
+    <div class="card">
+      <h2>Station &amp; slot</h2>
+      <p class="muted small">If more than one laptop is used, give each a different station letter (A, B, C…). Each station has its own balanced list, and participant IDs start with the letter.</p>
+      <div class="row">
+        <div style="width:120px"><label class="lbl small">Station</label><input type="text" id="st" value="${esc(station())}" maxlength="3"></div>
+        <div style="width:160px"><label class="lbl small">Next slot</label><input type="number" id="sl" value="${nextSlot()}" min="1" style="font-size:17px"></div>
+        <div style="align-self:flex-end"><button class="secondary" id="save">Save</button></div>
+      </div>
+      <div class="err" id="saveerr"></div>
+    </div>
+    <div class="card">
+      <h2>Sessions</h2>
+      ${all.length ? `<table><tr><th>ID</th><th>Assistant</th><th>Set</th><th>Status</th><th>Started</th></tr>
+        ${all.slice().reverse().map(s => `<tr><td class="mono">${esc(s.pid)}</td><td>${esc(s.assistant)}</td><td>${s.item_set}</td>
+          <td>${s.completed_at ? "complete" : "incomplete"}</td><td class="small">${esc((s.started_at || "").replace("T", " ").slice(0, 16))}</td></tr>`).join("")}</table>
+        <div class="row" style="margin-top:14px"><input type="text" id="delid" placeholder="Participant ID to delete (withdrawal request)" style="max-width:360px"><button class="secondary" id="del">Delete</button></div>
+        <div class="err" id="delerr"></div>` : `<p class="muted">None yet.</p>`}
+    </div>
+    <div class="card">
+      <h2>Test run</h2>
+      <p class="muted small">Pilot the study without using a slot or saving data.</p>
+      <div class="row"><button class="secondary" id="pilotE">Pilot as Eve</button><button class="secondary" id="pilotA">Pilot as Adam</button></div>
+    </div>
+    <div class="card">
+      <h2>Clear all data</h2>
+      <p class="muted small">Type <span class="mono">DELETE</span> to remove every session stored on this computer. Download a backup first.</p>
+      <div class="row"><input type="text" id="clr" style="max-width:200px"><button class="danger" id="clrb">Clear</button></div>
+    </div>
+    <button id="back">← Back</button>
+  `);
+  $("#csv") && ($("#csv").onclick = () => download(`trust_study_${station()}_${new Date().toISOString().slice(0,10)}.csv`, toCSV(complete), "text/csv"));
+  $("#json") && ($("#json").onclick = () => download(`trust_study_${station()}_raw.json`, JSON.stringify(all, null, 2), "application/json"));
+  $("#copy") && ($("#copy").onclick = () => { const ta = $("#csvtext"); ta.value = toCSV(complete); ta.classList.remove("hidden"); ta.select(); });
+  $("#save").onclick = () => {
+    const st = $("#st").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ""), sl = parseInt($("#sl").value, 10);
+    if (!st || !(sl >= 1)){ $("#saveerr").textContent = "Station must be letters/digits and slot ≥ 1."; return; }
+    const changedStation = st !== station();
+    store.set(K.station, st);
+    if (!changedStation) store.set(K.slot(st), sl);
+    screenAdmin();
+  };
+  $("#del") && ($("#del").onclick = () => {
+    const id = $("#delid").value.trim().toUpperCase();
+    const before = store.get(K.data, []);
+    const after = before.filter(s => s.pid.toUpperCase() !== id);
+    if (after.length === before.length){ $("#delerr").textContent = "No session with that ID."; return; }
+    store.set(K.data, after); submitRemote({ pid: id, withdrawn: true, withdrawn_at: new Date().toISOString() }); screenAdmin();
+  });
+  const pilot = name => {
+    newSession(); S.assistant = name; S.ai_gender = CONFIG.ASSISTANTS[name].gender; S.pid = "PILOT";
+    S._pilot = true; screenConsent();
+  };
+  $("#pilotE").onclick = () => pilot("Eve");
+  $("#pilotA").onclick = () => pilot("Adam");
+  $("#clrb").onclick = () => { if ($("#clr").value === "DELETE"){ store.set(K.data, []); screenAdmin(); } };
+  $("#back").onclick = screenHome;
+}
+
+/* Pilot sessions never save or use a slot */
+const _save = saveProgress;
+saveProgress = function(){ if (S && S._pilot) return; _save(); };
+const _submit = submitRemote;
+submitRemote = function(p){ if (S && S._pilot) return; _submit(p); };
+const _setStore = store.set;
+store.set = function(k, v){ if (S && S._pilot && String(k).startsWith("wyth_nextslot_")) return true; return _setStore.call(store, k, v); };
+
+screenHome();
+</script>
+</body>
+</html>
