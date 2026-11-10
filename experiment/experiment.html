@@ -50,14 +50,12 @@ label.check input{margin-top:5px;width:18px;height:18px;accent-color:var(--accen
 .opts button.sel{border-color:var(--accent);outline:2px solid var(--accent)}
 /* Assistant */
 .agent-head{display:flex;gap:14px;align-items:center;margin-bottom:14px}
-.agent-head svg{width:64px;height:64px;flex:none}
 .agent-name{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
 .agent-name::before{content:"● ";}
 .bubble{background:var(--panel2);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:16px 18px;font-size:19px;max-width:560px}
 .typing span{display:inline-block;width:8px;height:8px;margin:0 3px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
 .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-.intro-avatar svg{width:150px;height:150px}
 .stimulus{display:flex;justify-content:center;background:#f4efe6;border-radius:var(--radius);padding:10px}
 .stimulus svg,.stimulus img{max-width:100%;height:auto;display:block}
 .bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:12px}
@@ -83,7 +81,7 @@ code,.mono{font-family:var(--mono)}
    CONFIG — everything the group may want to change lives here.
    ================================================================= */
 const CONFIG = {
-  STUDY_VERSION: "v1.1-design3",   // saved with every session; matches Experimental Design slides v3
+  STUDY_VERSION: "v1.3",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup
   /* Hypotheses (slides v3) and the CSV columns that test them:
        H1a / H2a / H3a  -> Weight of Advice, from initial, advice, final (computed as woa)
        H1b / H2b / H3b  -> trust (1–7 rating after every trial)
@@ -106,7 +104,7 @@ const CONFIG = {
 
   // Matched at 11 words each. {n} is replaced by the advised number.
   PHRASES: {
-    confident: "I’m certain the answer is {n}. This is my most accurate estimate.",
+    confident: "I’m certain the answer is {n}. This is my best estimate.",
     hedged:    "I think it’s probably around {n}, but I’m not completely sure."
   },
   CHECK_NUMBER: 450,   // number used in the end-of-study confidence manipulation check
@@ -193,33 +191,6 @@ function stimulusHTML(item){
 const adviceFor = item => Math.round(item.truth * (1 + CONFIG.ADVICE_OFFSET * item.adviceDir));
 
 /* =================================================================
-   Avatars — identical face, colours and framing; only hair differs.
-   ================================================================= */
-function avatarSVG(gender){
-  const hairBack = gender === "female"
-    ? `<path d="M30 58 C28 30 44 20 60 20 C76 20 92 30 90 58 L94 96 C86 100 78 98 74 92 L46 92 C42 98 34 100 26 96 Z" fill="#5a3b2a"/>`
-    : ``;
-  const hairTop = gender === "female"
-    ? `<path d="M38 52 C38 34 48 27 60 27 C72 27 82 34 82 52 C76 42 66 38 58 39 C50 40 42 45 38 52 Z" fill="#5a3b2a"/>`
-    : `<path d="M39 50 C37 36 44 27 56 25 C64 23 74 25 79 31 C83 36 82 44 81 50 L79 50 C78 44 76 40 72 38 C66 40 58 40 50 37 C46 39 42 43 41 50 Z" fill="#5a3b2a"/>`;
-  const ears = gender === "male"
-    ? `<ellipse cx="39" cy="58" rx="4" ry="6" fill="#e9b996"/><ellipse cx="81" cy="58" rx="4" ry="6" fill="#e9b996"/>` : ``;
-  return `<svg viewBox="0 0 120 120" aria-hidden="true">
-    <circle cx="60" cy="60" r="58" fill="#f07c45" opacity=".18"/>
-    <circle cx="60" cy="60" r="58" fill="none" stroke="#f07c45" stroke-width="3"/>
-    ${hairBack}
-    <path d="M28 112 C30 92 44 84 60 84 C76 84 90 92 92 112 Z" fill="#3d6f8f"/>
-    <rect x="53" y="70" width="14" height="16" rx="6" fill="#e9b996"/>
-    ${ears}
-    <ellipse cx="60" cy="56" rx="21" ry="24" fill="#f1c6a3"/>
-    ${hairTop}
-    <path d="M47 51 Q52 48.5 56 50.5 M64 50.5 Q68 48.5 73 51" stroke="#5a3b2a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <circle cx="52" cy="58" r="2.6" fill="#2b2b2b"/><circle cx="68" cy="58" r="2.6" fill="#2b2b2b"/>
-    <path d="M52 68 Q60 74 68 68" stroke="#a2574a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-  </svg>`;
-}
-
-/* =================================================================
    Session state
    ================================================================= */
 let S = null;   // current participant session
@@ -278,6 +249,7 @@ function screenHome(){
         <button class="secondary" id="reveal">Show condition</button>
       </div>
       <p class="muted small hidden" id="cond" style="margin-top:12px"></p>
+      <p class="small" id="sheetstatus" style="margin:12px 0 0">${sheetStatusText()}</p>
     </div>
     <div class="row">
       <button id="go">Hand over to participant →</button>
@@ -324,8 +296,7 @@ function screenIntro(){
   const a = A();
   render(`
     <div class="card" style="text-align:center">
-      <div class="intro-avatar">${avatarSVG(a.gender)}</div>
-      <div class="agent-name" style="margin:10px 0 14px">${esc(a.name)} · AI assistant</div>
+      <div class="agent-name" style="margin:0 0 14px">${esc(a.name)} · AI assistant</div>
       <div class="bubble" style="margin:0 auto;text-align:left">Hi, I’m ${esc(a.name)}, your AI assistant. I’ll be helping you with some estimates today.</div>
     </div>
     <div class="card">
@@ -407,7 +378,7 @@ function trialAdvice(i){
     <div class="card">
       <h2>${esc(item.question)}</h2>
       <div class="mine">You → ${t.initial}</div>
-      <div class="agent-head">${avatarSVG(a.gender)}<div class="agent-name">${esc(a.name)} · AI assistant</div></div>
+      <div class="agent-head"><div class="agent-name">${esc(a.name)} · AI assistant</div></div>
       <div class="bubble" id="bubble"><span class="typing"><span></span><span></span><span></span></span></div>
       <div id="after" class="hidden">
         ${numberField("fin", "Your final estimate")}
@@ -545,7 +516,7 @@ function screenDebrief(){
       <p>Thank you for taking part. We told you we were testing an AI that helps with estimates. That was not the full story.</p>
       <p><b>There was no real AI.</b> “${esc(a.name)}” was a pre-scripted interface (a “Wizard of Oz” prototype). Its answers were fixed in advance and were always 10% away from the true number.</p>
       <p>We are studying whether two small presentation choices change how much people rely on AI advice:</p>
-      <p>• <b>Gender of the assistant.</b> Half of participants meet “Eve” (a female name and avatar) and half meet “Adam” (a male name and avatar). You met ${esc(a.name)}. Everything else is identical.</p>
+      <p>• <b>Gender of the assistant.</b> Half of participants meet “Eve” (a female name) and half meet “Adam” (a male name). You met ${esc(a.name)}. Everything else is identical.</p>
       <p>• <b>Confidence of the wording.</b> In some tasks the assistant sounded certain; in others it hedged (“I think it’s probably…”). The number was the same.</p>
       <p>We look at two things separately, and test each of them for both factors and for how the factors combine:</p>
       <p>• <b>What you did:</b> how far you moved your final answer towards the assistant’s answer (“weight of advice”).</p>
@@ -594,13 +565,62 @@ function saveProgress(){
   if (i >= 0) all[i] = copy; else all.push(copy);
   storageOK = store.set(K.data, all) && storageOK;
 }
+/* ---------- Google Sheet backup ----------
+   Every finished session (and every withdrawal) goes into an "outbox" saved in
+   this browser. The outbox is sent to the Google Sheet straight away, and again
+   every 30 s, whenever the laptop comes back online, and when the page is opened.
+   An item only leaves the outbox once the upload has gone through, so a dropped
+   Wi-Fi connection never loses data. The Sheet ignores a session it already has,
+   so sending one twice is harmless. */
+const OUTBOX = "wyth_outbox_v1";
+let flushing = false;
 function submitRemote(payload){
   if (!CONFIG.SUBMIT_URL) return;
-  try {
-    fetch(CONFIG.SUBMIT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload) }).catch(() => {});
-  } catch(e){}
+  const box = store.get(OUTBOX, []);
+  box.push(JSON.parse(JSON.stringify(payload)));
+  store.set(OUTBOX, box);
+  flushOutbox();
 }
+async function flushOutbox(){
+  if (!CONFIG.SUBMIT_URL || flushing) return;
+  flushing = true;
+  try {
+    let box = store.get(OUTBOX, []);
+    while (box.length){
+      const item = box[0];
+      try {
+        // no-cors: the reply can't be read, but the request only resolves once it has reached Google.
+        await fetch(CONFIG.SUBMIT_URL, { method: "POST", mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(item) });
+      } catch(e){ break; }   // offline: keep it, try again later
+      box = store.get(OUTBOX, []).filter(x => !(x.pid === item.pid && !!x.withdrawn === !!item.withdrawn));
+      store.set(OUTBOX, box);
+      store.set("wyth_last_upload", new Date().toISOString());
+    }
+  } finally {
+    flushing = false;
+    if (typeof refreshSheetStatus === "function") refreshSheetStatus();
+  }
+}
+function resendAllToSheet(){
+  if (!CONFIG.SUBMIT_URL) return 0;
+  const done = store.get(K.data, []).filter(s => s.completed_at && !s.withdrawn);
+  const box = store.get(OUTBOX, []);
+  done.forEach(s => { if (!box.some(x => x.pid === s.pid && !x.withdrawn)) box.push(s); });
+  store.set(OUTBOX, box);
+  flushOutbox();
+  return done.length;
+}
+function sheetStatusText(){
+  if (!CONFIG.SUBMIT_URL) return "Google Sheet backup: <b>off</b> (no SUBMIT_URL set). Data is only on this laptop.";
+  const waiting = store.get(OUTBOX, []).length, last = store.get("wyth_last_upload", null);
+  return `Google Sheet backup: <b>on</b> · waiting to upload: <span class="pill">${waiting}</span>` +
+    (last ? ` · last upload ${esc(last.replace("T", " ").slice(0, 16))}` : " · nothing uploaded yet") +
+    (waiting ? ` <span class="muted">(will retry automatically)</span>` : "");
+}
+function refreshSheetStatus(){ const el = document.getElementById("sheetstatus"); if (el) el.innerHTML = sheetStatusText(); }
+setInterval(flushOutbox, 30000);
+window.addEventListener("online", flushOutbox);
 
 /* Abandon current session (Ctrl+Shift+X): delete partial data, keep slot. */
 document.addEventListener("keydown", e => {
@@ -664,6 +684,13 @@ function screenAdmin(){
       <p class="muted small" style="margin-top:12px">Back up after every session block. Data lives in this browser only (unless a Google Sheet URL is set in CONFIG). Clearing browser data deletes it.</p>
     </div>
     <div class="card">
+      <h2>Google Sheet backup</h2>
+      <p class="small" id="sheetstatus">${sheetStatusText()}</p>
+      ${CONFIG.SUBMIT_URL ? `<div class="row"><button class="secondary" id="resend">Resend all sessions to the Sheet</button><button class="secondary" id="retry">Retry uploads now</button></div>
+      <p class="muted small" style="margin-top:10px">Resending is safe: the Sheet skips any session it already has. Use it once after setting up the Sheet, or if you're unsure everything arrived.</p><p class="small" id="resendmsg"></p>`
+      : `<p class="muted small">To turn it on, follow the steps at the top of <span class="mono">google-sheets/collector.gs</span> and paste the web-app URL into <span class="mono">SUBMIT_URL</span> in this file.</p>`}
+    </div>
+    <div class="card">
       <h2>Balance</h2>
       <table><tr><th></th><th>Item set 1</th><th>Item set 2</th></tr>
         <tr><td>Eve</td><td>${cells.Eve1}</td><td>${cells.Eve2}</td></tr>
@@ -725,6 +752,8 @@ function screenAdmin(){
   $("#pilotE").onclick = () => pilot("Eve");
   $("#pilotA").onclick = () => pilot("Adam");
   $("#clrb").onclick = () => { if ($("#clr").value === "DELETE"){ store.set(K.data, []); screenAdmin(); } };
+  $("#resend") && ($("#resend").onclick = () => { const n = resendAllToSheet(); $("#resendmsg").textContent = `Queued ${n} completed session(s) for upload.`; refreshSheetStatus(); });
+  $("#retry") && ($("#retry").onclick = () => flushOutbox());
   $("#back").onclick = screenHome;
 }
 
@@ -737,6 +766,7 @@ const _setStore = store.set;
 store.set = function(k, v){ if (S && S._pilot && String(k).startsWith("wyth_nextslot_")) return true; return _setStore.call(store, k, v); };
 
 screenHome();
+flushOutbox();   // send anything left over from last time
 </script>
 </body>
 </html>

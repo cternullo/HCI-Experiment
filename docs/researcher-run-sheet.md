@@ -8,9 +8,10 @@ Each laptop needs about 10 minutes of setup. Do this the day before, not with a 
 2. **Check the home screen.** It says "Ready for the next participant". If you see a yellow storage warning, the browser can't save data: close it and open the file directly.
 3. **Give each laptop its own station letter.** Go to **Data & settings → Station & slot**. Set A, B, C and so on, then press Save. Each station has its own balanced list, and its participant IDs start with that letter.
 4. **Run one pilot of each condition.** Go to **Data & settings → Pilot as Eve**, then **Pilot as Adam**, and click through the whole study. Pilot runs save nothing and don't use up a slot.
-5. **Set the withdrawal contact.** The consent and debrief screens tell participants to contact "a member of Group 9". If you want a named person or email, change `CONTACT` at the top of the file on every laptop.
-6. **Prepare the laptop.** Charge it, close other tabs, turn off notifications, and set browser zoom so that the whole dot image fits on screen.
-7. **Prepare the room.** Run one participant at a time, and make sure people waiting can't see the screen. Have the printed participant sheets ready.
+5. **Turn on the Google Sheet backup.** One person sets up the Sheet once (steps at the top of `google-sheets/collector.gs`) and pastes the URL into `SUBMIT_URL` in `experiment.html` *before* the file is copied onto the laptops. On each laptop the home screen should then say "Google Sheet backup: on". Pilot runs never upload, so test it with one normal session per laptop: check its 4 rows appear in the Sheet, then press **Withdraw my data** on the debrief screen and check the rows disappear. That removes the test from the laptop and the Sheet, and gives the slot back.
+6. **Set the withdrawal contact.** The consent and debrief screens tell participants to contact "a member of Group 9". If you want a named person or email, change `CONTACT` at the top of the file on every laptop.
+7. **Prepare the laptop.** Charge it, close other tabs, turn off notifications, and set browser zoom so that the whole dot image fits on screen.
+8. **Prepare the room.** Run one participant at a time, and make sure people waiting can't see the screen. Have the printed participant sheets ready.
 
 **Agree on these rules as a group:**
 
@@ -52,8 +53,9 @@ Rule of thumb: never re-run the same person, and never edit their data. Abandon 
 | Participant wants to stop part-way | Press **Ctrl + Shift + X**. The partial data is deleted and the slot is reused by the next person. |
 | Participant declines consent | They press **I do not want to take part**. Nothing is saved. |
 | Participant withdraws at the debrief | They press **Withdraw my data**, then confirm. Their data is deleted and the slot is returned. |
-| Participant asks to withdraw later | Ask for their ID (e.g. A007-K3). Go to **Data & settings → Sessions**, type the ID and press Delete. Do it on the laptop they used. If you use the Google Sheet, delete their rows there too. |
+| Participant asks to withdraw later | Ask for their ID (e.g. A007-K3). Go to **Data & settings → Sessions**, type the ID and press Delete. Do it on the laptop they used. This also deletes their rows from the Google Sheet automatically (check the Sheet afterwards). |
 | Laptop freezes, or the page is refreshed mid-study | The session can't be resumed. Reopen the file. The unfinished session is excluded from the export and the slot is not used up. Don't run that person again, because they've already seen the images. |
+| Home screen says "waiting to upload" and the number keeps growing | The laptop can't reach Google (no Wi-Fi). Carry on: the data is safe on the laptop and uploads by itself once it's back online. Export the CSV at the end of the block as usual. |
 | Storage warning on the home screen | Data isn't being saved. Close the browser and open `experiment.html` directly by double-clicking it. |
 | A participant already knows what the study is about | Run them as normal and note it in the log. Their hypothesis-guess answer will usually flag it. |
 | You accidentally pressed **Show condition** in front of them | Carry on, but note it in the log so the group can decide whether to exclude them. |
@@ -74,12 +76,13 @@ The data exists only in that laptop's browser until you export it. Export after 
 2. Also press **Download raw JSON (backup)**.
 3. If downloads don't work, press **Show CSV to copy**, then paste the text into a file ending in `.csv`.
 4. Upload both files to the group's shared drive the same day. Keep one CSV per laptop per day, and don't merge them by hand. **Don't commit participant data to this repo.**
-5. Check the **Balance** table. Each Eve/Adam × set 1/2 cell should be about equal.
-6. Only use **Clear all data** once the backup is safely in the shared drive. Never clear the browser's history or site data on a study laptop.
+5. If the Google Sheet backup is on, check **Data & settings → Google Sheet backup** says "waiting to upload: 0". If not, press **Retry uploads now** once you're on Wi-Fi.
+6. Check the **Balance** table. Each Eve/Adam × set 1/2 cell should be about equal.
+7. Only use **Clear all data** once the backup is safely in the shared drive. Never clear the browser's history or site data on a study laptop.
 
 **When data collection is finished:**
 
-1. Put every CSV in the `data/` folder of your local copy of this repo.
+1. Put every CSV in the `data/` folder of your local copy of this repo. You can use the laptop CSVs, the Google Sheet's "trials" tab (File → Download → CSV), or both: the script removes duplicates.
 2. Run `pip install pandas numpy scipy matplotlib pingouin tabulate` once.
 3. Run `python analysis/analyze.py data/*.csv`, then open `results/report.md` and the two charts.
 4. Read every hypothesis guess yourselves, then decide which exclusions to make. Run `python analysis/analyze.py data/*.csv --exclude-failed-checks` as the sensitivity check, and report both runs.

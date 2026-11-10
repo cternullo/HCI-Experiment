@@ -4,7 +4,7 @@
 Group 9 · Human Centred AI · Group Empirical Study.
 Team: Cole Ternullo, Danny Dowling, Felim Sullivan, Laura Gonzalez, Liam Maher.
 
-This is a Wizard-of-Oz experiment. Participants make 4 estimates, see a pre-scripted "AI" answer that is always 10% off the truth, then give a final estimate and a trust rating. There are two factors:
+This is a Wizard-of-Oz experiment. Participants make 4 estimates, see a pre-scripted "AI" answer that is always 10% off the truth, then give a final estimate and a trust rating. The assistant is shown by name only (no picture), and the confident and hedged sentences are both 11 words. There are two factors:
 
 - **Assistant gender:** Eve (female) or Adam (male), between-subjects.
 - **Wording confidence:** confident or hedged, within-subjects (2 trials each).
@@ -22,7 +22,7 @@ The analysis is a 2×2 mixed ANOVA on each DV, with α = .025 (Bonferroni correc
 ```
 experiment/experiment.html    the whole study app: one file, works offline
 analysis/analyze.py           WOA, ANOVAs, ART, follow-up tests, charts → results/
-google-sheets/collector.gs    optional: send data from every laptop to one Google Sheet
+google-sheets/collector.gs    Google Sheet backup: every laptop uploads each session automatically
 docs/researcher-run-sheet.md  how to run a session (for us)
 docs/participant-instructions.md  printable handout (cover story only)
 docs/design/                  experimental design slides (v1 original, v3 current)
@@ -32,6 +32,8 @@ data/                         put exported CSVs here locally (git-ignored)
 ## Quick start
 
 **To run the study:** follow [`docs/researcher-run-sheet.md`](docs/researcher-run-sheet.md). In short, double-click `experiment/experiment.html`, pilot it, then hand the laptop to participants and export the CSV afterwards.
+
+**To back up data to Google Sheets:** one person sets up the Sheet once (steps at the top of [`google-sheets/collector.gs`](google-sheets/collector.gs)) and pastes its URL into `SUBMIT_URL`. After that, every laptop uploads each finished session on its own and retries if the Wi-Fi drops. The researcher screen shows whether the backup is on and how many sessions are waiting. Keep the URL inside the group: don't commit it to GitHub.
 
 **To analyse the data:**
 
