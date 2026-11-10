@@ -4,10 +4,10 @@
 Group 9 · Human Centred AI · Group Empirical Study.
 Team: Cole Ternullo, Danny Dowling, Felim Sullivan, Laura Gonzalez, Liam Maher.
 
-This is a Wizard-of-Oz experiment. Participants make 4 estimates, see a pre-scripted "AI" answer that is always 10% off the truth, then give a final estimate and a trust rating. The assistant is shown by name only (no picture), and the confident and hedged sentences are both 11 words. There are two factors:
+This is a Wizard-of-Oz experiment. Participants answer 8 estimation questions (how many sweets are in a jar, how far Dublin is from Galway, and so on; five come with a photo). For each one they give an estimate, see a pre-scripted "AI" answer that is always 10% off the truth, then give a final estimate and a trust rating. The assistant is shown by name only (no picture), and the confident and hedged sentences are both 11 words. There are two factors:
 
 - **Assistant gender:** Eve (female) or Adam (male), between-subjects.
-- **Wording confidence:** confident or hedged, within-subjects (2 trials each).
+- **Wording confidence:** confident or hedged, within-subjects (4 trials each).
 
 | Hypothesis | Weight of Advice (a) | Trust rating (b) |
 |---|---|---|
@@ -20,7 +20,9 @@ The analysis is a 2×2 mixed design on each DV, with α = .025 (Bonferroni corre
 ## Repo layout
 
 ```
-experiment/experiment.html    the whole study app: one file, works offline
+experiment/experiment.html    the study app, works offline
+experiment/images/            the photos for the questions (must stay next to experiment.html)
+stimulus-sources/             where each photo and true answer comes from (never shown to participants)
 analysis/analyze.py           WOA, ANOVAs, ART, follow-up tests, charts → results/
 google-sheets/collector.gs    Google Sheet backup: every laptop uploads each session automatically
 docs/researcher-run-sheet.md  how to run a session (for us)
@@ -31,7 +33,7 @@ data/                         put exported CSVs here locally (git-ignored)
 
 ## Quick start
 
-**To run the study:** follow [`docs/researcher-run-sheet.md`](docs/researcher-run-sheet.md). In short, double-click `experiment/experiment.html`, pilot it, then hand the laptop to participants and export the CSV afterwards.
+**To run the study:** follow [`docs/researcher-run-sheet.md`](docs/researcher-run-sheet.md). In short, copy the whole `experiment` folder to the laptop, double-click `experiment.html` inside it, pilot it, then hand the laptop to participants and export the CSV afterwards.
 
 **To back up data to Google Sheets:** one person sets up the Sheet once (steps at the top of [`google-sheets/collector.gs`](google-sheets/collector.gs)) and pastes its URL into `SUBMIT_URL`. After that, every laptop uploads each finished session on its own and retries if the Wi-Fi drops. The researcher screen shows whether the backup is on and how many sessions are waiting. Keep the URL inside the group: don't commit it to GitHub.
 
@@ -47,8 +49,9 @@ python analysis/analyze.py data/*.csv --exclude-failed-checks   # sensitivity an
 
 Everything you might change is in the `CONFIG` block at the top of `experiment/experiment.html`: the advice delay, the image exposure time, the confident and hedged wording, the items, and the withdrawal contact.
 
-- **Items:** each item has `truth` and `adviceDir` (+1 = advice 10% above the truth, −1 = 10% below). Set 1 makes the first half confident; set 2 swaps them. Keep one + item and one − item in each half. Add items in pairs.
-- **Photos instead of dots:** set `type: "image"` and `src: "images/x.jpg"`. You need a verified true value for every photo.
+- **Items:** each item has a `question`, a `unit`, a `truth` and an `adviceDir` (+1 = advice 10% above the truth, −1 = 10% below). Confidence alternates down the list: in set 1 items 1, 3, 5, 7 are confident and 2, 4, 6, 8 are hedged; set 2 swaps them. Keep two + items and two − items in each group, and add items in pairs.
+- **Photos:** `type: "image"` with `src: "images/x.jpg"` shows a photo, and `type: "text"` shows the question on its own. You need a verified true value for every item: record the source in [`stimulus-sources/SOURCES.md`](stimulus-sources/SOURCES.md). Answers must be whole numbers.
+- **Exposure time:** `EXPOSURE_MS: 0` keeps the photo on screen while the participant answers. A value such as `6000` shows it for 6 seconds and then hides it.
 - **Version tag:** if you change anything participants see, bump `STUDY_VERSION`. It is saved with every session.
 
 ## Working on this together

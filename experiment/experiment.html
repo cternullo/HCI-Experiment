@@ -58,6 +58,14 @@ label.check input{margin-top:5px;width:18px;height:18px;accent-color:var(--accen
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
 .stimulus{display:flex;justify-content:center;background:#f4efe6;border-radius:var(--radius);padding:10px}
 .stimulus svg,.stimulus img{max-width:100%;height:auto;display:block}
+.stimulus img{max-height:44vh;width:auto;border-radius:8px}
+.stimulus.small{flex:0 0 auto;max-width:42%}
+.stimulus.small img{max-height:30vh}
+.card > .stimulus{margin-bottom:18px}
+.withthumb{display:flex;gap:22px;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+.withthumb > .qa{flex:1;min-width:0}
+@media (max-width:700px){.withthumb{flex-direction:column-reverse}.stimulus.small{max-width:100%}}
+.unit{font-family:var(--mono);color:var(--muted)}
 .bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:12px}
 .bar > div{height:100%;background:var(--accent);width:100%;transition-property:width;transition-timing-function:linear}
 .mine{font-family:var(--mono);color:var(--muted);margin:6px 0 16px}
@@ -81,14 +89,14 @@ code,.mono{font-family:var(--mono)}
    CONFIG — everything the group may want to change lives here.
    ================================================================= */
 const CONFIG = {
-  STUDY_VERSION: "v1.3",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup
+  STUDY_VERSION: "v2.0",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup; v2.0 = 8 real-world estimation items instead of 4 dot images
   /* Hypotheses (slides v3) and the CSV columns that test them:
        H1a / H2a / H3a  -> Weight of Advice, from initial, advice, final (computed as woa)
        H1b / H2b / H3b  -> trust (1–7 rating after every trial)
        H1 = confidence (within), H2 = assistant Eve/Adam (between), H3 = their interaction.
      Participants never see these: the hypothesis guess is asked before any check that hints at them. */
   ADVICE_DELAY_MS: 2000,        // "2 s wait" before advice appears (same in all conditions)
-  EXPOSURE_MS: 6000,            // how long each image is shown before it disappears
+  EXPOSURE_MS: 0,               // 0 = the photo stays on screen while the participant answers; e.g. 6000 = show it for 6 s, then hide it
   ADVICE_OFFSET: 0.10,          // advice is a fixed 10% from the truth
   SLOTS_TO_GENERATE: 200,       // length of the pre-shuffled assignment list per station
   CONTACT: "a member of Group 9 (Human Centred AI)",   // shown on consent/debrief for withdrawal
@@ -109,21 +117,33 @@ const CONFIG = {
   },
   CHECK_NUMBER: 450,   // number used in the end-of-study confidence manipulation check
 
-  /* Items. With 4 items, item set 1 makes items 1–2 confident and 3–4 hedged; set 2 swaps.
-     adviceDir: +1 = advice 10% above truth, -1 = 10% below. Arranged so each confidence
-     level gets one "above" and one "below" item in BOTH item sets.
-     type "dots": generated image (identical for every participant via the seed).
-     type "image": set src to a file next to this HTML, e.g. "images/meal1.jpg" (local file use only).
-     Keep an even number of items. */
+  /* Items: 2 per category (counting, weight, time, distance). Sources and verified answers
+     are in stimulus-sources/SOURCES.md.
+     Confidence alternates down the list: item set 1 makes items 1, 3, 5, 7 confident and
+     2, 4, 6, 8 hedged; item set 2 swaps them. So each confidence level gets one item from
+     every category, and two "above" and two "below" items, in BOTH item sets.
+     adviceDir: +1 = advice 10% above truth, -1 = 10% below.
+     type "image": src is a photo in the images/ folder next to this HTML.
+     type "text":  question only, no picture.
+     type "dots":  generated dot image (needs seed and color; not used at the moment).
+     unit is shown next to the answer box. Keep an even number of items. */
   ITEMS: [
-    { id: "I1", type: "dots", truth: 147, seed: 101, color: "#2f6db5", adviceDir: +1,
-      question: "How many dots were in the image?" },
-    { id: "I2", type: "dots", truth: 212, seed: 202, color: "#c0492b", adviceDir: -1,
-      question: "How many dots were in the image?" },
-    { id: "I3", type: "dots", truth: 96,  seed: 303, color: "#2e8a57", adviceDir: +1,
-      question: "How many dots were in the image?" },
-    { id: "I4", type: "dots", truth: 263, seed: 404, color: "#7a4bb0", adviceDir: -1,
-      question: "How many dots were in the image?" }
+    { id: "I1", type: "image", src: "images/q1-jellybeans.jpg", truth: 1623, adviceDir: +1, unit: "sweets",
+      question: "How many sweets are in this jar?" },
+    { id: "I2", type: "image", src: "images/q2-crowd.jpg", truth: 1454, adviceDir: -1, unit: "people",
+      question: "How many people are in this photo?" },
+    { id: "I3", type: "image", src: "images/q3-apples.jpg", truth: 983, adviceDir: -1, unit: "grams",
+      question: "How much do these apples weigh, in grams?" },
+    { id: "I4", type: "image", src: "images/q4-laptop.jpg", truth: 1240, adviceDir: +1, unit: "grams",
+      question: "How much does this laptop weigh, in grams?" },
+    { id: "I5", type: "image", src: "images/q5-kettle.jpg", truth: 135, adviceDir: +1, unit: "seconds",
+      question: "How long does this kettle take to boil 1 litre of water, in seconds?" },
+    { id: "I6", type: "text", truth: 62, adviceDir: -1, unit: "minutes",
+      question: "According to Google Maps, how many minutes does it take to walk from UCD to St Stephen’s Green?" },
+    { id: "I7", type: "text", truth: 207, adviceDir: -1, unit: "km",
+      question: "How far is it by road from Dublin to Galway, in km?" },
+    { id: "I8", type: "text", truth: 782, adviceDir: +1, unit: "km",
+      question: "What’s the straight-line distance from Dublin to Paris, in km?" }
   ]
 };
 
@@ -166,7 +186,7 @@ const station = () => store.get(K.station, "A");
 const nextSlot = () => store.get(K.slot(station()), 1);
 
 /* =================================================================
-   Stimuli: deterministic dot images
+   Stimuli: photos (images/ folder) and deterministic dot images
    ================================================================= */
 function dotsSVG(item){
   const W = 620, H = 400, r = 6, minD = 15, pad = 14;
@@ -188,6 +208,29 @@ function stimulusHTML(item){
   if (item.type === "image") return `<img src="${esc(item.src)}" alt="">`;
   return dotsSVG(item);
 }
+const itemOf = t => CONFIG.ITEMS.find(x => x.id === t.item_id);
+const hasPicture = item => item.type === "image" || item.type === "dots";
+// Timed mode (EXPOSURE_MS > 0): the picture is shown for a few seconds, then hidden.
+const timedExposure = item => hasPicture(item) && CONFIG.EXPOSURE_MS > 0;
+// Otherwise the picture stays on screen next to the question.
+const pictureHTML = (item, small) => hasPicture(item) && !timedExposure(item)
+  ? `<div class="stimulus${small ? " small" : ""}">${stimulusHTML(item)}</div>` : "";
+
+/* The photos are separate files. Load them up front (so they show instantly) and
+   warn the researcher on the home screen if any of them is missing. */
+let missingImages = [];
+function imageWarnHTML(){
+  return missingImages.length ? `<div class="notice">⚠ Missing photo${missingImages.length > 1 ? "s" : ""}: <span class="mono">${missingImages.map(esc).join(", ")}</span>. Copy the whole <span class="mono">experiment</span> folder (this file <b>and</b> its <span class="mono">images</span> folder), then reload.</div>` : "";
+}
+function checkImages(){
+  const srcs = CONFIG.ITEMS.filter(it => it.type === "image").map(it => it.src);
+  Promise.all(srcs.map(src => new Promise(res => {
+    const im = new Image(); im.onload = () => res(null); im.onerror = () => res(src); im.src = src;
+  }))).then(r => {
+    missingImages = r.filter(Boolean);
+    const el = document.getElementById("imgwarn"); if (el) el.innerHTML = imageWarnHTML();
+  });
+}
 const adviceFor = item => Math.round(item.truth * (1 + CONFIG.ADVICE_OFFSET * item.adviceDir));
 
 /* =================================================================
@@ -200,11 +243,10 @@ function clearTimers(){ timers.forEach(t => clearTimeout(t)); timers = []; }
 function newSession(){
   const st = station(), slot = nextSlot();
   const cond = assignmentList(st)[(slot - 1) % CONFIG.SLOTS_TO_GENERATE];
-  const n = CONFIG.ITEMS.length, half = n / 2;
-  // Item set 1: first half confident; item set 2: second half confident.
+  // Item set 1: items 1, 3, 5, 7 confident and 2, 4, 6, 8 hedged; item set 2 swaps them.
   const plan = CONFIG.ITEMS.map((it, i) => ({
     item: it,
-    confidence: (cond.itemSet === 1) === (i < half) ? "confident" : "hedged"
+    confidence: (cond.itemSet === 1) === (i % 2 === 0) ? "confident" : "hedged"
   }));
   // Trial order is randomised per participant so confidence is not confounded with position.
   const order = shuffle(plan, Math.random);
@@ -242,6 +284,7 @@ function screenHome(){
     <div class="kicker">Experimenter screen · do not show participants</div>
     <h1>Ready for the next participant</h1>
     ${storageOK ? "" : `<div class="notice">⚠ This browser is blocking local storage, so data will not be saved. Open this file directly in Chrome/Firefox/Edge (not inside a preview window).</div>`}
+    <div id="imgwarn">${imageWarnHTML()}</div>
     <div class="card">
       <div class="row">
         <div>Station <span class="pill">${esc(station())}</span> · next slot <span class="pill">#${slot}</span> · completed here <span class="pill">${done}</span></div>
@@ -257,6 +300,7 @@ function screenHome(){
   `);
   $("#go").onclick = () => { newSession(); screenConsent(); };
   $("#admin").onclick = screenAdmin;
+  checkImages();
 }
 
 /* ---------- Consent (cover story) ---------- */
@@ -266,8 +310,8 @@ function screenConsent(){
     <h1>Testing an AI that helps with estimates</h1>
     <div class="card">
       <p>We are a student group in the Human Centred AI module. We are testing an AI assistant that helps people make quick estimates.</p>
-      <p>You will see 4 images for a few seconds each and estimate how many dots each one contains. After each estimate the AI assistant will give its own answer, and you can then give a final answer and rate how much you trust the assistant.</p>
-      <p>It takes about <b>5 minutes</b>. Participation is voluntary. You can stop at any time without giving a reason.</p>
+      <p>You will answer ${CONFIG.ITEMS.length} short estimation questions, for example how many sweets are in a jar or how far apart two cities are. Some of them come with a photo. After each estimate the AI assistant will give its own answer, and you can then give a final answer and rate how much you trust the assistant.</p>
+      <p>It takes about <b>10 minutes</b>. Participation is voluntary. You can stop at any time without giving a reason.</p>
       <p>We do <b>not</b> record your name, email or any personal details. Your answers are stored under a random ID. You will see this ID at the end, and you can use it to ask ${esc(CONFIG.CONTACT)} to delete your data.</p>
       <p class="muted small">Some details of the study are explained only at the end, so that they do not affect your answers. You will get a full explanation before you leave.</p>
       <label class="check" style="margin-top:18px"><input type="checkbox" id="ok"> <span>I have read this information, I am 18 or over, and I agree to take part.</span></label>
@@ -294,33 +338,39 @@ function screenIntro(){
     </div>
     <div class="card">
       <h2>How it works</h2>
-      <p>1. An image of dots appears for ${CONFIG.EXPOSURE_MS / 1000} seconds. There is not enough time to count them, so just estimate.</p>
-      <p>2. Type your estimate of how many dots there were.</p>
+      <p>1. A question appears, sometimes with a photo${CONFIG.EXPOSURE_MS > 0 ? ` that is shown for ${CONFIG.EXPOSURE_MS / 1000} seconds` : ""}. You are not expected to know the exact answer, so just give your best estimate.</p>
+      <p>2. Type your estimate as a whole number.</p>
       <p>3. ${esc(a.name)} will then give an estimate.</p>
       <p>4. Give your <b>final</b> estimate. You can keep your first answer, change it a little, or change it a lot. Try to be as accurate as you can.</p>
       <p>5. Rate how much you trust ${esc(a.name)}’s answer.</p>
     </div>
     <button id="start">Start</button>
   `);
-  $("#start").onclick = () => trialReady(0);
+  $("#start").onclick = () => trialStart(0);
 }
 
 /* ---------- Trials ---------- */
+function trialStart(i){
+  // Timed mode shows the picture first; otherwise go straight to the question.
+  if (timedExposure(itemOf(S.trials[i]))) trialReady(i); else trialInitial(i);
+}
 function trialReady(i){
-  const t = S.trials[i];
+  const t = S.trials[i], item = itemOf(t);
   render(`
     <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
     <div class="card" style="text-align:center;padding:60px 28px">
-      <h2>Get ready</h2>
+      <div class="kicker">Get ready</div>
+      <h2>${esc(item.question)}</h2>
       <p class="muted">The image will appear for ${CONFIG.EXPOSURE_MS / 1000} seconds.</p>
       <button id="show">Show image</button>
     </div>`);
   $("#show").onclick = () => trialExposure(i);
 }
 function trialExposure(i){
-  const t = S.trials[i], item = CONFIG.ITEMS.find(x => x.id === t.item_id);
+  const t = S.trials[i], item = itemOf(t);
   render(`
     <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
+    <h2 style="margin-top:14px">${esc(item.question)}</h2>
     <div class="stimulus">${stimulusHTML(item)}</div>
     <div class="bar"><div id="bar"></div></div>`);
   const bar = $("#bar");
@@ -330,9 +380,10 @@ function trialExposure(i){
   t.exposure_started = new Date().toISOString();
   timers.push(setTimeout(() => trialInitial(i), CONFIG.EXPOSURE_MS));
 }
-function numberField(id, label){
+function numberField(id, label, unit){
   return `<div class="field"><label class="lbl" for="${id}">${label}</label>
-    <input type="number" id="${id}" inputmode="numeric" min="0" step="1" autocomplete="off"><div class="err" id="${id}-err"></div></div>`;
+    <div class="row"><input type="number" id="${id}" inputmode="numeric" min="0" step="1" autocomplete="off">${unit ? `<span class="unit">${esc(unit)}</span>` : ""}</div>
+    <div class="err" id="${id}-err"></div></div>`;
 }
 function readInt(id){
   const v = $("#" + id).value.trim();
@@ -344,12 +395,13 @@ function bindEnter(inputId, btnId){
   $("#" + inputId).addEventListener("keydown", e => { if (e.key === "Enter" && !$("#" + btnId).disabled) $("#" + btnId).click(); });
 }
 function trialInitial(i){
-  const t = S.trials[i], item = CONFIG.ITEMS.find(x => x.id === t.item_id);
+  const t = S.trials[i], item = itemOf(t);
   render(`
     <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
     <div class="card">
+      ${pictureHTML(item)}
       <h2>${esc(item.question)}</h2>
-      ${numberField("est", "Your estimate")}
+      ${numberField("est", "Your estimate", item.unit)}
       <button id="sub" disabled>Submit estimate</button>
     </div>`);
   const t0 = now(), inp = $("#est");
@@ -364,17 +416,22 @@ function trialInitial(i){
   };
 }
 function trialAdvice(i){
-  const t = S.trials[i], item = CONFIG.ITEMS.find(x => x.id === t.item_id), a = A();
+  const t = S.trials[i], item = itemOf(t), a = A();
   const msg = CONFIG.PHRASES[t.confidence].replace("{n}", t.advice);
   render(`
     <div class="progress">Task ${i + 1} of ${S.trials.length}</div>
     <div class="card">
-      <h2>${esc(item.question)}</h2>
-      <div class="mine">You → ${t.initial}</div>
-      <div class="agent-head"><div class="agent-name">${esc(a.name)} · AI assistant</div></div>
-      <div class="bubble" id="bubble"><span class="typing"><span></span><span></span><span></span></span></div>
+      <div class="withthumb">
+        <div class="qa">
+          <h2>${esc(item.question)}</h2>
+          <div class="mine">You → ${t.initial}</div>
+          <div class="agent-head"><div class="agent-name">${esc(a.name)} · AI assistant</div></div>
+          <div class="bubble" id="bubble"><span class="typing"><span></span><span></span><span></span></span></div>
+        </div>
+        ${pictureHTML(item, true)}
+      </div>
       <div id="after" class="hidden">
-        ${numberField("fin", "Your final estimate")}
+        ${numberField("fin", "Your final estimate", item.unit)}
         <button id="sub" disabled>Submit final estimate</button>
       </div>
     </div>`);
@@ -420,7 +477,7 @@ function trialTrust(i){
   $("#sub").onclick = () => {
     t.trust = val; t.rt_trust_ms = now() - t0;
     saveProgress();
-    if (i + 1 < S.trials.length) trialReady(i + 1); else checkHypothesis();
+    if (i + 1 < S.trials.length) trialStart(i + 1); else checkHypothesis();
   };
 }
 
