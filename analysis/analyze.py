@@ -18,8 +18,10 @@ What it does (matches the pre-registered plan in the design deck):
   * 2x2 mixed ANOVA: assistant (Eve/Adam, between) x confidence (within),
     on WOA (tests H1a, H2a, H3a), then on trust (H1b, H2b, H3b).
   * alpha = .025 per ANOVA (Bonferroni for 2 DVs).
-  * Aligned Rank Transform (ART) ANOVA as the non-parametric version; it is the
-    deciding test when residuals are skewed (capped WOA usually is).
+  * Deciding test fixed in advance, per DV (not chosen after looking at the data):
+      - WOA:   Aligned Rank Transform (ART) ANOVA, because capping to [0, 1] makes it skewed.
+      - Trust: ordinary mixed ANOVA.
+    The other test is always reported alongside as a robustness check.
   * If the interaction is significant: confident vs hedged tested separately
     for Eve and for Adam.
 """
@@ -39,6 +41,8 @@ import matplotlib.pyplot as plt
 
 OUT = "results"
 ALPHA = 0.025   # Bonferroni: .05 / 2 dependent variables (WOA, trust), per the design slides
+# Which test decides each hypothesis. Fixed before any data is collected: do not change after.
+DECIDING_TEST = {"woa": "ART", "trust": "ANOVA"}
 
 
 # ----------------------------------------------------------------- loading
@@ -225,15 +229,16 @@ def main():
         aov["Source"] = aov["Source"].replace({"assistant * confidence": "Interaction"})
         art = pcol(art_mixed_anova(sub, dv, "assistant", "confidence", "pid"))
 
-        # Normality of residuals decides which ANOVA is the deciding test (slides: skewed -> ART)
+        # The deciding test is fixed in advance (DECIDING_TEST); the data never changes it.
+        use_art = DECIDING_TEST[dv] == "ART"
+        lines.append(f"Deciding test (fixed before data collection): **"
+                     + ("Aligned Rank Transform ANOVA" if use_art else "mixed ANOVA") + "**. "
+                     + "The other test is shown as a robustness check.\n")
+        # Normality is reported for information only, so readers can judge the assumption.
         resid = sub[dv] - sub.groupby(["assistant", "confidence"])[dv].transform("mean")
-        use_art = False
         if len(resid) >= 3 and resid.std() > 0:
             sw = stats.shapiro(resid)
-            use_art = sw.pvalue < .05
-            lines.append(f"Shapiro–Wilk on residuals: W = {sw.statistic:.3f}, p = {sw.pvalue:.4f} → "
-                         + ("skewed/non-normal, so the **ART ANOVA decides** the hypotheses."
-                            if use_art else "no strong evidence against normality, so the **mixed ANOVA decides** the hypotheses.") + "\n")
+            lines.append(f"Shapiro–Wilk on residuals (for information only): W = {sw.statistic:.3f}, p = {sw.pvalue:.4f}\n")
 
         for name, tab, is_main in [("Mixed ANOVA", aov, not use_art), ("Aligned Rank Transform ANOVA", art, use_art)]:
             t = tab.copy()
