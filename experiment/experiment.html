@@ -89,7 +89,7 @@ code,.mono{font-family:var(--mono)}
    CONFIG — everything the group may want to change lives here.
    ================================================================= */
 const CONFIG = {
-  STUDY_VERSION: "v2.0",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup; v2.0 = 8 real-world estimation items instead of 4 dot images
+  STUDY_VERSION: "v2.1",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup; v2.0 = 8 real-world estimation items instead of 4 dot images; v2.1 = 6 items (kettle and Dublin–Galway removed)
   /* Hypotheses (slides v3) and the CSV columns that test them:
        H1a / H2a / H3a  -> Weight of Advice, from initial, advice, final (computed as woa)
        H1b / H2b / H3b  -> trust (1–7 rating after every trial)
@@ -117,11 +117,14 @@ const CONFIG = {
   },
   CHECK_NUMBER: 450,   // number used in the end-of-study confidence manipulation check
 
-  /* Items: 2 per category (counting, weight, time, distance). Sources and verified answers
-     are in stimulus-sources/SOURCES.md.
-     Confidence alternates down the list: item set 1 makes items 1, 3, 5, 7 confident and
-     2, 4, 6, 8 hedged; item set 2 swaps them. So each confidence level gets one item from
-     every category, and two "above" and two "below" items, in BOTH item sets.
+  /* Items: 2 counting, 2 weight, 1 time, 1 distance. Sources and verified answers are in
+     stimulus-sources/SOURCES.md. I5 (kettle) and I7 (Dublin–Galway) were removed in v2.1;
+     the other IDs are unchanged so data stays comparable.
+     Confidence alternates down the list: item set 1 makes list positions 1, 3, 5 (I1, I3, I6)
+     confident and 2, 4, 6 (I2, I4, I8) hedged; item set 2 swaps them. So each confidence level
+     gets one counting, one weight, and one time-or-distance item. With 3 items per level the
+     above/below split can't be even: in set 1, confident is 1 above + 2 below and hedged is
+     2 above + 1 below; set 2 reverses this, so it balances out across item sets.
      adviceDir: +1 = advice 10% above truth, -1 = 10% below.
      type "image": src is a photo in the images/ folder next to this HTML.
      type "text":  question only, no picture.
@@ -136,12 +139,8 @@ const CONFIG = {
       question: "How much do these apples weigh, in grams?" },
     { id: "I4", type: "image", src: "images/q4-laptop.jpg", truth: 1240, adviceDir: +1, unit: "grams",
       question: "How much does this laptop weigh, in grams?" },
-    { id: "I5", type: "image", src: "images/q5-kettle.jpg", truth: 135, adviceDir: +1, unit: "seconds",
-      question: "How long does this kettle take to boil 1 litre of water, in seconds?" },
     { id: "I6", type: "text", truth: 62, adviceDir: -1, unit: "minutes",
       question: "According to Google Maps, how many minutes does it take to walk from UCD to St Stephen’s Green?" },
-    { id: "I7", type: "text", truth: 207, adviceDir: -1, unit: "km",
-      question: "How far is it by road from Dublin to Galway, in km?" },
     { id: "I8", type: "text", truth: 782, adviceDir: +1, unit: "km",
       question: "What’s the straight-line distance from Dublin to Paris, in km?" }
   ]
@@ -243,7 +242,7 @@ function clearTimers(){ timers.forEach(t => clearTimeout(t)); timers = []; }
 function newSession(){
   const st = station(), slot = nextSlot();
   const cond = assignmentList(st)[(slot - 1) % CONFIG.SLOTS_TO_GENERATE];
-  // Item set 1: items 1, 3, 5, 7 confident and 2, 4, 6, 8 hedged; item set 2 swaps them.
+  // Item set 1: list positions 1, 3, 5 confident and 2, 4, 6 hedged; item set 2 swaps them.
   const plan = CONFIG.ITEMS.map((it, i) => ({
     item: it,
     confidence: (cond.itemSet === 1) === (i % 2 === 0) ? "confident" : "hedged"

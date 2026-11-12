@@ -6,13 +6,13 @@
 
 You'll help us test an AI assistant that helps people make quick estimates. It takes about **10 minutes** on this laptop.
 
-You'll answer 8 short estimation questions, for example how many sweets are in a jar or how far apart two cities are. Some of them come with a photo. Then you'll answer a few questions and read a short explanation of the study. Everything you need is shown on screen.
+You'll answer 6 short estimation questions, for example how many sweets are in a jar or how far apart two cities are. Some of them come with a photo. Then you'll answer a few questions and read a short explanation of the study. Everything you need is shown on screen.
 
 ## Step by step
 
 1. **Read the study information.** If you agree to take part, tick the box and press **Continue**.
 2. **Meet the AI assistant.** Read how the tasks work, then press **Start**.
-3. **Answer the 8 questions.** Each one goes like this:
+3. **Answer the 6 questions.** Each one goes like this:
    1. Read the question and look at the photo, if there is one. You aren't expected to know the exact answer, so don't try to count or work it out precisely.
    2. Type your best estimate and press **Submit estimate** (or press Enter).
    3. After a moment, the assistant gives its own estimate.

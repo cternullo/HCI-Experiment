@@ -5,15 +5,16 @@ answers and uncropped originals are not served to participants.
 
 "AI advice" is the truth shifted by 10% in the direction given in the question table.
 
+Q5 (kettle) and Q7 (Dublin to Galway) were removed in study version v2.1, leaving 6 items. Their notes
+are kept below for the record; the other item numbers are unchanged.
+
 | # | Question | Image file | Truth | AI advice | Dir |
 |---|---|---|---|---|---|
 | 1 | How many sweets are in this jar? | `experiment/images/q1-jellybeans.jpg` | 1623 | 1785 | +10% |
 | 2 | How many people are in this photo? | `experiment/images/q2-crowd.jpg` | 1454 | 1309 | −10% |
 | 3 | How much do these apples weigh, in grams? | `experiment/images/q3-apples.jpg` | 983 g | 885 g | −10% |
 | 4 | How much does this laptop weigh, in grams? | `experiment/images/q4-laptop.jpg` | 1240 g | 1364 g | +10% |
-| 5 | How long does this kettle take to boil 1 litre of water, in seconds? | `experiment/images/q5-kettle.jpg` | 135 s | 149 s | +10% |
 | 6 | According to Google Maps, how many minutes does it take to walk from UCD to St Stephen's Green? | none | 62 min | 56 min | −10% |
-| 7 | How far is it by road from Dublin to Galway, in km? | none | 207 km | 186 km | −10% |
 | 8 | What's the straight-line distance from Dublin to Paris, in km? | none | 782 km | 860 km | +10% |
 
 ## Q1. Jelly beans: 1623
@@ -56,7 +57,7 @@ answers and uncropped originals are not served to participants.
 - This item replaced an earlier packed-backpack photo, whose weight depended on contents
   nobody could see.
 
-## Q5. Kettle: 135 s (2 min 15 s)
+## Q5. Kettle: 135 s (2 min 15 s) — REMOVED in v2.1
 
 - Image: https://images.expertreviews.co.uk/wp-content/uploads/2023/08/Kenwood_Abbey_Lux_1.jpg
 - Answer page: https://www.expertreviews.co.uk/home-garden/small-appliances/kenwood-abbey-lux-kettle-review
@@ -73,7 +74,7 @@ answers and uncropped originals are not served to participants.
 - Screenshot: `q6-googlemaps-ucd-to-stephens-green-walk.jpg`
 - The figure depends on where Google pins "UCD" and can move by a minute or two over time.
 
-## Q7. Dublin to Galway by road: 207 km
+## Q7. Dublin to Galway by road: 207 km — REMOVED in v2.1
 
 - Google Maps driving directions, "Dublin" to "Galway": fastest route via M6, 207 km.
   Alternatives shown: 210 km and 219 km.
