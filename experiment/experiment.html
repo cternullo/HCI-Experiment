@@ -97,13 +97,13 @@ const CONFIG = {
      Participants never see these: the hypothesis guess is asked before any check that hints at them. */
   // Stations: one per researcher laptop. The researcher picks theirs on the first screen.
   // Each station starts on a different condition (see assignmentList). Add names if you like,
-  // e.g. { id: "A", label: "Cole" }. Keep ids short (letters/digits): they start every participant ID.
+  // e.g. { id: "A", label: "Cole’s station" }. Keep ids short (letters/digits): they start every participant ID.
   STATIONS: [
-    { id: "A", label: "Station A" },
-    { id: "B", label: "Station B" },
-    { id: "C", label: "Station C" },
-    { id: "D", label: "Station D" },
-    { id: "E", label: "Station E" }
+    { id: "A", label: "Cole’s station" },
+    { id: "B", label: "Danny’s station" },
+    { id: "C", label: "Felim’s station" },
+    { id: "D", label: "Laura’s station" },
+    { id: "E", label: "Liam’s station" }
   ],
   ADVICE_DELAY_MS: 2000,        // "2 s wait" before advice appears (same in all conditions)
   EXPOSURE_MS: 0,               // 0 = the photo stays on screen while the participant answers; e.g. 6000 = show it for 6 s, then hide it
@@ -309,7 +309,7 @@ function screenHome(){
     <div id="imgwarn">${imageWarnHTML()}</div>
     <div class="card">
       <div class="row">
-        <div>${stationLabel(station()) === "Station " + station() ? "Station" : esc(stationLabel(station())) + " · station"} <span class="pill">${esc(station())}</span> · next slot <span class="pill">#${slot}</span> · completed here <span class="pill">${done}</span></div>
+        <div>${stationLabel(station()) === "Station " + station() ? "Station" : esc(stationLabel(station()))} <span class="pill">${esc(station())}</span> · next slot <span class="pill">#${slot}</span> · completed here <span class="pill">${done}</span></div>
       </div>
       <p class="small" id="sheetstatus" style="margin:12px 0 0">${sheetStatusText()}</p>
     </div>
