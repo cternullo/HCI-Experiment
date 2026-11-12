@@ -89,12 +89,22 @@ code,.mono{font-family:var(--mono)}
    CONFIG — everything the group may want to change lives here.
    ================================================================= */
 const CONFIG = {
-  STUDY_VERSION: "v2.1",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup; v2.0 = 8 real-world estimation items instead of 4 dot images; v2.1 = 6 items (kettle and Dublin–Galway removed)
+  STUDY_VERSION: "v2.2",   // saved with every session; v1.2 = names only (no avatars); v1.3 = 11-word confident line + Google Sheet backup; v2.0 = 8 real-world estimation items instead of 4 dot images; v2.1 = 6 items (kettle and Dublin–Galway removed); v2.2 = station picker on first load, each station starts on a different condition
   /* Hypotheses (slides v3) and the CSV columns that test them:
        H1a / H2a / H3a  -> Weight of Advice, from initial, advice, final (computed as woa)
        H1b / H2b / H3b  -> trust (1–7 rating after every trial)
        H1 = confidence (within), H2 = assistant Eve/Adam (between), H3 = their interaction.
      Participants never see these: the hypothesis guess is asked before any check that hints at them. */
+  // Stations: one per researcher laptop. The researcher picks theirs on the first screen.
+  // Each station starts on a different condition (see assignmentList). Add names if you like,
+  // e.g. { id: "A", label: "Cole" }. Keep ids short (letters/digits): they start every participant ID.
+  STATIONS: [
+    { id: "A", label: "Station A" },
+    { id: "B", label: "Station B" },
+    { id: "C", label: "Station C" },
+    { id: "D", label: "Station D" },
+    { id: "E", label: "Station E" }
+  ],
   ADVICE_DELAY_MS: 2000,        // "2 s wait" before advice appears (same in all conditions)
   EXPOSURE_MS: 0,               // 0 = the photo stays on screen while the participant answers; e.g. 6000 = show it for 6 s, then hide it
   ADVICE_OFFSET: 0.10,          // advice is a fixed 10% from the truth
@@ -175,13 +185,25 @@ const CONDITIONS = [
   { assistant: "Eve",  itemSet: 1 }, { assistant: "Eve",  itemSet: 2 },
   { assistant: "Adam", itemSet: 1 }, { assistant: "Adam", itemSet: 2 }
 ];
+/* Staggered starts: the first block of 4 at each station is a different row of a
+   balanced Latin square, so station A, B, C and D each start on a different condition
+   and run the 4 conditions in a different order. Later blocks are shuffled per station.
+   There are only 4 conditions, so a 5th station must share a starting condition with
+   one of A–D: station E starts like B but runs the block in a different order. */
+const FIRST_BLOCKS = [[0, 1, 3, 2], [1, 2, 0, 3], [2, 3, 1, 0], [3, 0, 2, 1], [1, 3, 2, 0]];
+function stationIndex(st){
+  const i = CONFIG.STATIONS.findIndex(x => x.id === st);
+  return i >= 0 ? i : hashStr(st) % FIRST_BLOCKS.length;
+}
 function assignmentList(station){
   const rnd = mulberry32(hashStr("group9-" + station));
-  const out = [];
+  const out = FIRST_BLOCKS[stationIndex(station) % FIRST_BLOCKS.length].map(k => CONDITIONS[k]);
   while (out.length < CONFIG.SLOTS_TO_GENERATE) out.push(...shuffle(CONDITIONS, rnd));
   return out;
 }
+const stationChosen = () => store.get(K.station, null) !== null;
 const station = () => store.get(K.station, "A");
+const stationLabel = st => (CONFIG.STATIONS.find(x => x.id === st) || { label: "Station " + st }).label;
 const nextSlot = () => store.get(K.slot(station()), 1);
 
 /* =================================================================
@@ -276,6 +298,7 @@ function render(html){ clearTimers(); app.innerHTML = html; window.scrollTo(0, 0
 /* ---------- Experimenter home ---------- */
 function screenHome(){
   S = null;
+  if (!stationChosen()) return screenStationPicker();
   const sessions = store.get(K.data, []);
   const done = sessions.filter(s => s.completed_at && !s.withdrawn).length;
   const slot = nextSlot();
@@ -286,20 +309,56 @@ function screenHome(){
     <div id="imgwarn">${imageWarnHTML()}</div>
     <div class="card">
       <div class="row">
-        <div>Station <span class="pill">${esc(station())}</span> · next slot <span class="pill">#${slot}</span> · completed here <span class="pill">${done}</span></div>
+        <div>${stationLabel(station()) === "Station " + station() ? "Station" : esc(stationLabel(station())) + " · station"} <span class="pill">${esc(station())}</span> · next slot <span class="pill">#${slot}</span> · completed here <span class="pill">${done}</span></div>
       </div>
       <p class="small" id="sheetstatus" style="margin:12px 0 0">${sheetStatusText()}</p>
     </div>
     <div class="row">
       <button id="go">Hand over to participant →</button>
       <div class="spacer"></div>
+      <button class="secondary" id="chst">Change station</button>
       <button class="secondary" id="admin">Data &amp; settings</button>
     </div>
     <p class="muted small" style="margin-top:24px">Tip: if a participant has to stop part-way, press <span class="mono">Ctrl + Shift + X</span> to abandon the session. Abandoned or withdrawn sessions do not use up a slot, so balance is kept.</p>
   `);
   $("#go").onclick = () => { newSession(); screenConsent(); };
   $("#admin").onclick = screenAdmin;
+  $("#chst").onclick = screenStationPicker;
   checkImages();
+}
+
+/* ---------- Station picker (researcher only) ---------- */
+function screenStationPicker(){
+  S = null;
+  const sessions = store.get(K.data, []);
+  const doneAt = st => sessions.filter(s => s.station === st && s.completed_at && !s.withdrawn).length;
+  const current = stationChosen() ? station() : null;
+  render(`
+    <div class="kicker">Experimenter setup · do not show participants</div>
+    <h1>Choose your station</h1>
+    <p class="muted">Each researcher’s laptop must use a <b>different</b> station. Each station hands out the conditions in its own balanced order, starting from a different one, and its participant IDs start with its letter. This laptop remembers your choice.</p>
+    <div class="opts" id="stlist" style="margin:20px 0">
+      ${CONFIG.STATIONS.map(x => `<button type="button" data-v="${esc(x.id)}" class="${x.id === current ? "sel" : ""}">
+        <span class="pill">${esc(x.id)}</span> &nbsp;${esc(x.label)}
+        <span class="muted small" style="float:right">${doneAt(x.id)} completed on this laptop · next slot #${store.get(K.slot(x.id), 1)}</span></button>`).join("")}
+    </div>
+    <div class="row">
+      <button id="ok" ${current ? "" : "disabled"}>Use this station →</button>
+      ${current ? `<div class="spacer"></div><button class="secondary" id="cancel">Cancel</button>` : ""}
+    </div>
+    <div class="err" id="sterr"></div>
+  `);
+  let pick = current;
+  document.querySelectorAll("#stlist button").forEach(b => b.onclick = () => {
+    document.querySelectorAll("#stlist button").forEach(x => x.classList.remove("sel"));
+    b.classList.add("sel"); pick = b.dataset.v; $("#ok").disabled = false;
+  });
+  $("#ok").onclick = () => {
+    if (!pick) return;
+    if (!store.set(K.station, pick)){ $("#sterr").textContent = "Could not save the station: this browser is blocking storage."; return; }
+    screenHome();
+  };
+  $("#cancel") && ($("#cancel").onclick = screenHome);
 }
 
 /* ---------- Consent (cover story) ---------- */
@@ -754,9 +813,9 @@ function screenAdmin(){
     </div>
     <div class="card">
       <h2>Station &amp; slot</h2>
-      <p class="muted small">If more than one laptop is used, give each a different station letter (A, B, C…). Each station has its own balanced list, and participant IDs start with the letter.</p>
+      <p class="muted small">Each laptop must use a different station. Each station has its own balanced list with a different starting condition, and participant IDs start with its letter. Change the station with <b>Change station</b> on the home screen; change the next slot here only to recover from a mistake.</p>
       <div class="row">
-        <div style="width:120px"><label class="lbl small">Station</label><input type="text" id="st" value="${esc(station())}" maxlength="3"></div>
+        <div style="width:180px"><label class="lbl small">Station</label><input type="text" id="st" value="${esc(station())} · ${esc(stationLabel(station()))}" disabled></div>
         <div style="width:160px"><label class="lbl small">Next slot</label><input type="number" id="sl" value="${nextSlot()}" min="1" style="font-size:17px"></div>
         <div style="align-self:flex-end"><button class="secondary" id="save">Save</button></div>
       </div>
@@ -786,11 +845,9 @@ function screenAdmin(){
   $("#json") && ($("#json").onclick = () => download(`trust_study_${station()}_raw.json`, JSON.stringify(all, null, 2), "application/json"));
   $("#copy") && ($("#copy").onclick = () => { const ta = $("#csvtext"); ta.value = toCSV(complete); ta.classList.remove("hidden"); ta.select(); });
   $("#save").onclick = () => {
-    const st = $("#st").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ""), sl = parseInt($("#sl").value, 10);
-    if (!st || !(sl >= 1)){ $("#saveerr").textContent = "Station must be letters/digits and slot ≥ 1."; return; }
-    const changedStation = st !== station();
-    store.set(K.station, st);
-    if (!changedStation) store.set(K.slot(st), sl);
+    const sl = parseInt($("#sl").value, 10);
+    if (!(sl >= 1)){ $("#saveerr").textContent = "Next slot must be 1 or more."; return; }
+    store.set(K.slot(station()), sl);
     screenAdmin();
   };
   $("#del") && ($("#del").onclick = () => {
