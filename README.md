@@ -4,7 +4,7 @@
 Group 9 · Human Centred AI · Group Empirical Study.
 Team: Cole Ternullo, Danny Dowling, Felim Sullivan, Laura Gonzalez, Liam Maher.
 
-This is a Wizard-of-Oz experiment. Participants answer 8 estimation questions (how many sweets are in a jar, how far Dublin is from Galway, and so on; five come with a photo). For each one they give an estimate, see a pre-scripted "AI" answer that is always 10% off the truth, then give a final estimate and a trust rating. The assistant is shown by name only (no picture), and the confident and hedged sentences are both 11 words. There are two factors:
+This is a Wizard-of-Oz experiment. Participants answer 6 estimation questions (how many sweets are in a jar, how far Dublin is from Paris, and so on; four come with a photo). For each one they give an estimate, see a pre-scripted "AI" answer that is always 10% off the truth, then give a final estimate and a trust rating. The assistant is shown by name only (no picture), and the confident and hedged sentences are both 11 words. There are two factors:
 
 - **Assistant gender:** Eve (female) or Adam (male), between-subjects.
 - **Wording confidence:** confident or hedged, within-subjects (4 trials each).
@@ -49,7 +49,7 @@ python analysis/analyze.py data/*.csv --exclude-failed-checks   # sensitivity an
 
 Everything you might change is in the `CONFIG` block at the top of `experiment/experiment.html`: the advice delay, the image exposure time, the confident and hedged wording, the items, and the withdrawal contact.
 
-- **Items:** each item has a `question`, a `unit`, a `truth` and an `adviceDir` (+1 = advice 10% above the truth, −1 = 10% below). Confidence alternates down the list: in set 1 items 1, 3, 5, 7 are confident and 2, 4, 6, 8 are hedged; set 2 swaps them. Keep two + items and two − items in each group, and add items in pairs.
+- **Items:** each item has a `question`, a `unit`, a `truth` and an `adviceDir` (+1 = advice 10% above the truth, −1 = 10% below). Confidence alternates down the list: in set 1 list positions 1, 3, 5 are confident and 2, 4, 6 are hedged; set 2 swaps them. With 3 items per group the + and − items can't split evenly, so each group has 2 of one and 1 of the other, and the item sets reverse this. Add or remove items in pairs.
 - **Photos:** `type: "image"` with `src: "images/x.jpg"` shows a photo, and `type: "text"` shows the question on its own. You need a verified true value for every item: record the source in [`stimulus-sources/SOURCES.md`](stimulus-sources/SOURCES.md). Answers must be whole numbers.
 - **Exposure time:** `EXPOSURE_MS: 0` keeps the photo on screen while the participant answers. A value such as `6000` shows it for 6 seconds and then hides it.
 - **Version tag:** if you change anything participants see, bump `STUDY_VERSION`. It is saved with every session.
