@@ -24,6 +24,7 @@ experiment/experiment.html    the study app, works offline
 experiment/images/            the photos for the questions (must stay next to experiment.html)
 stimulus-sources/             where each photo and true answer comes from (never shown to participants)
 analysis/analyze.py           WOA, ANOVAs, ART, follow-up tests, charts → results/
+analysis/make_results.py      every number and figure in the final report → analysis/figures/
 google-sheets/collector.gs    Google Sheet backup: every laptop uploads each session automatically
 docs/researcher-run-sheet.md  how to run a session (for us)
 docs/participant-instructions.md  printable handout (cover story only)
@@ -44,6 +45,14 @@ pip install -r requirements.txt
 python analysis/analyze.py data/*.csv
 python analysis/analyze.py data/*.csv --exclude-failed-checks   # sensitivity analysis
 ```
+
+**Numbers and figures in the final report:** `analysis/make_results.py` works out every number, table and graph in the report's Results, Statistical Tests and Conclusions sections (12 participants, stations A and C, 12 Nov 2026). Put the two laptop CSVs in `data/` (they're kept out of git), then run:
+
+```bash
+python analysis/make_results.py data/trust_study_A_2026-11-12.csv data/trust_study_C_2026-11-12.csv
+```
+
+It prints the results (a saved copy is in `analysis/results_output.txt`) and saves Figures 1 to 5 in `analysis/figures/`.
 
 ## Changing the experiment
 

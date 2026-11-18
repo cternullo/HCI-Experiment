@@ -1,0 +1,97 @@
+Participants: 12  ({'Eve': 6, 'Adam': 6})
+Trials: 72
+Session length: median 5.5 min (range 3.8 to 9.9)
+Raw WOA outside 0-1 (capped): 5
+WOA = 0 (ignored AI): 15   WOA = 1 (copied AI): 8
+
+Confidence check: confident M = 5.75 (SD 1.76), hedged M = 2.50 (SD 1.09); t(11) = 7.29, p = 0.0000; Wilcoxon p = 0.0010; rated confident higher: 11/12
+
+Recalled the name: {'Adam': 3, 'Eve': 6}
+gender_perceived  didnt_think  female  male  neither
+assistant                                           
+Adam                        2       0     3        1
+Eve                         1       5     0        0
+Fisher's exact test on name recall: p = 0.18
+
+Mean (SD) per condition:
+                       woa       trust      
+                      mean   std  mean   std
+assistant confidence                        
+Adam      confident   0.54  0.24  4.33  1.48
+          hedged      0.54  0.27  4.17  0.91
+Eve       confident   0.51  0.23  4.56  1.15
+          hedged      0.27  0.27  3.72  1.78
+             woa       trust      
+            mean   std  mean   std
+confidence                        
+confident   0.53  0.22  4.44  1.27
+hedged      0.41  0.30  3.94  1.37
+            woa  trust
+assistant             
+Adam       0.54   4.25
+Eve        0.39   4.14
+
+Controls: advice exactly 10% off on every trial: True
+Advice too high (+1) / too low (-1) per wording:
+ col_0       -1   1
+confidence        
+confident   18  18
+hedged      18  18
+Item set per assistant:
+ item_set   1  2
+assistant      
+Adam       3  3
+Eve        3  3
+Trials where own estimate = AI's answer (can't be scored): 0
+Shapiro-Wilk on woa residuals: W = 0.981, p = 0.92
+Shapiro-Wilk on trust residuals: W = 0.971, p = 0.68
+
+WOA - mixed ANOVA (H1a, H2a, H3a)
+  assistant    F(1, 10) =  1.60   p = 0.234   np2 = 0.14
+  confidence   F(1, 10) =  2.33   p = 0.158   np2 = 0.19
+  Interaction  F(1, 10) =  2.38   p = 0.154   np2 = 0.19
+
+WOA - ART ANOVA
+  assistant    F(1, 10) =  0.98   p = 0.345   np2 = 0.09
+  confidence   F(1, 10) =  0.75   p = 0.407   np2 = 0.07
+  Interaction  F(1, 10) =  1.92   p = 0.196   np2 = 0.16
+
+Trust - mixed ANOVA (H1b, H2b, H3b)
+  assistant    F(1, 10) =  0.04   p = 0.854   np2 = 0.00
+  confidence   F(1, 10) =  0.90   p = 0.366   np2 = 0.08
+  Interaction  F(1, 10) =  0.40   p = 0.542   np2 = 0.04
+
+Trust - ART ANOVA
+  assistant    F(1, 10) =  0.00   p = 0.959   np2 = 0.00
+  confidence   F(1, 10) =  0.95   p = 0.352   np2 = 0.09
+  Interaction  F(1, 10) =  0.66   p = 0.435   np2 = 0.06
+H1 predicted a direction, so a one-tailed p is half the two-tailed p (the means went the predicted way).
+Effect size of wording on woa: d_z = 0.42
+Effect size of wording on trust: d_z = 0.28
+People with higher WOA after confident advice: 9/12
+
+WOA without the people who forgot the name
+  assistant    F(1, 7) =  1.57   p = 0.250   np2 = 0.18
+  confidence   F(1, 7) =  6.26   p = 0.041   np2 = 0.47
+  Interaction  F(1, 7) =  1.27   p = 0.297   np2 = 0.15
+
+Trust without the people who forgot the name
+  assistant    F(1, 7) =  0.25   p = 0.630   np2 = 0.03
+  confidence   F(1, 7) =  3.98   p = 0.086   np2 = 0.36
+  Interaction  F(1, 7) =  0.40   p = 0.547   np2 = 0.05
+
+WOA without those AND without people who guessed the hypothesis (['A005-PG'])
+  assistant    F(1, 6) =  0.30   p = 0.603   np2 = 0.05
+  confidence   F(1, 6) =  4.05   p = 0.091   np2 = 0.40
+  Interaction  F(1, 6) =  2.22   p = 0.187   np2 = 0.27
+Eve: confident vs hedged WOA, Wilcoxon W = 0, p = 0.031; 6 of 6 went up
+Adam: confident vs hedged WOA, Wilcoxon W = 9, p = 0.844; 3 of 6 went up
+
+WOA vs trust (repeated-measures correlation): r = 0.58, 95% CI [0.38, 0.72], p = 0.0000
+WOA per question: {'I1': 0.41, 'I2': 0.44, 'I3': 0.56, 'I4': 0.53, 'I6': 0.27, 'I8': 0.58}
+
+Power: with n = 12, 80% power at alpha = 0.025 needs d_z = 1.01 (wording) and d = 2.04 (gender)
+People needed to detect d_z = 0.42 for wording: 56
+People per group needed for d = 0.5 for gender: 77
+
+Figures saved in /tmp/claude-0/-home-claude/47fb9707-e525-526c-91af-c0d5a6060452/scratchpad/rr/analysis/figures
